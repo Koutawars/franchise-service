@@ -11,7 +11,6 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -27,7 +26,7 @@ public class RequestFilter implements WebFilter {
 
     LogBuilder logBuilder = log.with();
 
-    logBuilder.key("method", exchange.getRequest().getMethod())
+    logBuilder.key("method", exchange.getRequest().getMethod().toString())
         .key("path", exchange.getRequest().getURI().getPath())
         .key("traceId", traceId);
 

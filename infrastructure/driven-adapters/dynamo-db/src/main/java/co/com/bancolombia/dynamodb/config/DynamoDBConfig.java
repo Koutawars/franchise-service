@@ -27,7 +27,7 @@ public class DynamoDBConfig {
   }
 
   @Bean
-  @Profile({"dev", "cer", "pdn"})
+  @Profile({"dev", "cer", "pdn", "prod"})
   public DynamoDbAsyncClient amazonDynamoDBAsync(MetricPublisher publisher, @Value("${aws.region}") String region) {
     return DynamoDbAsyncClient.builder()
         .region(Region.of(region))

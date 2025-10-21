@@ -124,9 +124,6 @@ docker run -p 8080:8080 \
 
 # Reporte de cobertura
 ./gradlew jacocoTestReport
-
-# Análisis con SonarQube
-./gradlew sonar
 ```
 
 ## Deployment
@@ -184,6 +181,84 @@ Punto de entrada y configuración:
 - Logs estructurados con contexto de trazabilidad
 - Métricas de aplicación
 - Health checks
+
+## Gestión del Despliegue en AWS
+
+### Subir Cambios de Código
+
+Para actualizar la aplicación desplegada en AWS con nuevos cambios:
+
+```bash
+# 1. Compilar el código
+gradle clean build
+
+# 2. Construir nueva imagen Docker
+docker build -f deployment/docker/Dockerfile -t franchise-service .
+
+# 3. Etiquetar para ECR
+docker tag franchise-service:latest 660183939224.dkr.ecr.us-east-1.amazonaws.com/franchise-service:latest
+
+# 4. Autenticarse en ECR (usar CMD, no PowerShell)
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 660183939224.dkr.ecr.us-east-1.amazonaws.com
+
+# 5. Subir imagen a ECR
+docker push 660183939224.dkr.ecr.us-east-1.amazonaws.com/franchise-service:latest
+
+# 6. Forzar nuevo despliegue en ECS
+aws ecs update-service --cluster franchise-service-cluster --service franchise-service-service --force-new-deployment --region us-east-1
+```
+
+### Gestión del Servicio
+
+**Detener el servicio (mantiene infraestructura):**
+```bash
+aws ecs update-service --cluster franchise-service-cluster --service franchise-service-service --desired-count 0 --region us-east-1
+```
+
+**Reiniciar el servicio:**
+```bash
+aws ecs update-service --cluster franchise-service-cluster --service franchise-service-service --desired-count 1 --region us-east-1
+```
+
+**Verificar estado del servicio:**
+```bash
+aws ecs describe-services --cluster franchise-service-cluster --services franchise-service-service --region us-east-1 --query "services[0].{RunningCount:runningCount,DesiredCount:desiredCount}"
+```
+
+**Ver logs de la aplicación:**
+```bash
+aws logs tail /ecs/franchise-service --follow --region us-east-1
+```
+
+### Destruir Infraestructura Completa
+
+**⚠️ CUIDADO: Esto elimina todo permanentemente**
+```bash
+cd deployment/terraform
+terraform destroy
+```
+
+### URLs de Acceso
+
+- **API Gateway**: `https://5wvyipqww0.execute-api.us-east-1.amazonaws.com/dev`
+- **ALB Directo**: `http://franchise-service-alb-2064631887.us-east-1.elb.amazonaws.com`
+- **Swagger UI**: Agregar `/swagger-ui.html` a cualquiera de las URLs anteriores
+
+### Troubleshooting
+
+**Si las tareas fallan al iniciar:**
+1. Verificar logs: `aws logs tail /ecs/franchise-service --since 10m --region us-east-1`
+2. Verificar health checks del ALB
+3. Confirmar que la imagen se subió correctamente a ECR
+
+**Si hay múltiples tareas fallando:**
+```bash
+# Detener todas las tareas
+aws ecs update-service --cluster franchise-service-cluster --service franchise-service-service --desired-count 0 --region us-east-1
+
+# Esperar y reiniciar
+aws ecs update-service --cluster franchise-service-cluster --service franchise-service-service --desired-count 1 --region us-east-1
+```
 
 ## Contribución
 

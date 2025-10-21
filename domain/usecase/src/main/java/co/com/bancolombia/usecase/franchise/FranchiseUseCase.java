@@ -97,9 +97,9 @@ public class FranchiseUseCase {
 
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .then(franchiseRepository.findBranchById(branchId, franchiseId))
+          .flatMap(franchise -> franchiseRepository.findBranchById(branchId, franchiseId))
           .switchIfEmpty(Mono.error(new BranchNotFoundException()))
-          .then(franchiseRepository.findProductById(productId, branchId, franchiseId))
+          .flatMap(branch -> franchiseRepository.findProductById(productId, branchId, franchiseId))
           .switchIfEmpty(Mono.error(new ProductNotFoundException()))
           .flatMap(product -> {
             product.setStock(stock);
@@ -163,8 +163,8 @@ public class FranchiseUseCase {
 
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .then(franchiseRepository.findBranchById(branchId, franchiseId))
-          .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
+          .flatMap(franchise -> franchiseRepository.findBranchById(branchId, franchiseId))
+          .switchIfEmpty(Mono.error(new BranchNotFoundException()))
           .flatMap(branch -> {
             branch.setName(name);
             return franchiseRepository.saveBranch(branch);
@@ -184,9 +184,9 @@ public class FranchiseUseCase {
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
           .then(franchiseRepository.findBranchById(branchId, franchiseId))
-          .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
+          .switchIfEmpty(Mono.error(new BranchNotFoundException()))
           .then(franchiseRepository.findProductById(productId, branchId, franchiseId))
-          .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
+          .switchIfEmpty(Mono.error(new ProductNotFoundException()))
           .flatMap(product -> {
             product.setName(name);
             return franchiseRepository.saveProduct(product);

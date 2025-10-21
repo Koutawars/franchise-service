@@ -1,26 +1,49 @@
 package co.com.bancolombia.metrics.aws;
 
-import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
-import io.micrometer.core.instrument.logging.LoggingRegistryConfig;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.metrics.internal.EmptyMetricCollection;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.metrics.MetricCollection;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(MockitoExtension.class)
 class MicrometerMetricPublisherTest {
 
+    @Mock
+    private MetricCollection metricCollection;
+    
+    private MeterRegistry meterRegistry;
+    private MicrometerMetricPublisher publisher;
+
+    @BeforeEach
+    void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        publisher = new MicrometerMetricPublisher(meterRegistry);
+    }
+
     @Test
-    void metricTest() {
-        LoggingMeterRegistry loggingMeterRegistry = LoggingMeterRegistry
-            .builder(LoggingRegistryConfig.DEFAULT)
-            .build();
+    void constructor_ShouldCreateInstance() {
+        MicrometerMetricPublisher newPublisher = new MicrometerMetricPublisher(meterRegistry);
+        
+        assertThat(newPublisher).isNotNull();
+    }
 
-        MicrometerMetricPublisher micrometerMetricPublisher = new MicrometerMetricPublisher(loggingMeterRegistry);
+    @Test
+    void publish_ShouldNotThrowException() {
+        publisher.publish(metricCollection);
+        
+        assertThat(publisher).isNotNull();
+    }
 
-        micrometerMetricPublisher.publish(EmptyMetricCollection.create());
-        micrometerMetricPublisher.close();
-
-        assertNotNull(micrometerMetricPublisher);
-
+    @Test
+    void close_ShouldNotThrowException() {
+        publisher.close();
+        
+        assertThat(publisher).isNotNull();
     }
 }
