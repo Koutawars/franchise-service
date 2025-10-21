@@ -5,11 +5,6 @@ module "dynamodb_franchise_table" {
   range_key    = "sk"
   ttl_enabled  = false
 
-  # global_indexes = [
-  #   {
-  #   }
-  # ]
-
   tags = {
     Environment = "dev"
     Project     = "franchise-service"

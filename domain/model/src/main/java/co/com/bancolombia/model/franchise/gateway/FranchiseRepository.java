@@ -7,12 +7,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface FranchiseRepository {
-  public Mono<Franchise> save(Franchise franchise);
-  public Mono<Franchise> findById(String id);
-  public Mono<Branch> saveBranch(Branch branch);
-  public Mono<Branch> findBranchById(String id, String franchiseId);
-  public Mono<Product> saveProduct(Product product);
-  public Mono<Product> findProductById(String id, String branchId, String franchiseId);
-  public Mono<Void> deleteProduct(Product product);
-  public Flux<Product> findProductsByFranchise(String franchiseId);
+  Mono<Franchise> save(Franchise franchise);
+  Mono<Franchise> findById(String id);
+  Mono<Branch> saveBranch(Branch branch);
+  Mono<Branch> findBranchById(String id, String franchiseId);
+  Mono<Product> saveProduct(Product product);
+  Mono<Product> findProductById(String id, String branchId, String franchiseId);
+  Mono<Void> deleteProduct(Product product);
+  Flux<Product> findProductsByFranchise(String franchiseId);
 }

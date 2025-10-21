@@ -139,4 +139,12 @@ class StructuredLoggerTest {
     assertNotNull(result);
     assertDoesNotThrow(() -> result.info("Chained keys test"));
   }
+
+  @Test
+  void shouldCreateLogBuilderWithoutContext() {
+    LogBuilder logBuilder = structuredLogger.with();
+
+    assertNotNull(logBuilder);
+    assertDoesNotThrow(() -> logBuilder.info("Test without context"));
+  }
 }
