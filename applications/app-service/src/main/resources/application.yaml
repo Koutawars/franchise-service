@@ -35,7 +35,7 @@ cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 aws:
   dynamodb:
-    franchiseTable: "franchise-table-dev"
+    franchiseTable: "${DYNAMODB_TABLE_NAME:franchise-service-table-dev}"
 springdoc:
   api-docs:
     path: /api-docs
