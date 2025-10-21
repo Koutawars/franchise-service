@@ -1,0 +1,444 @@
+{
+  "info": {
+    "name": "franchise-service",
+    "description": "",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create franchise",
+      "event": [],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"MC Donalds\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Create branch",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const id = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "branches"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Branch Santa Marta Maria Eugenia\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Create product",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const branchId = bru.getEnvVar(\"branchId\");",
+              "bru.setVar(\"branchId\", branchId);",
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "branches",
+            "{{branchId}}",
+            "products"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Macburguer\",\n  \"stock\": 1000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Delete product",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const branchId = bru.getEnvVar(\"branchId\");",
+              "bru.setVar(\"branchId\", branchId);",
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);",
+              "const productId = bru.getEnvVar(\"productId\");",
+              "bru.setVar(\"productId\", productId);",
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "branches",
+            "{{branchId}}",
+            "products",
+            "{{productId}}"
+          ],
+          "query": [],
+          "variable": []
+        }
+      }
+    },
+    {
+      "name": "Change name in product",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const branchId = bru.getEnvVar(\"branchId\");",
+              "bru.setVar(\"branchId\", branchId);",
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);",
+              "const productId = bru.getEnvVar(\"productId\");",
+              "bru.setVar(\"productId\", productId);",
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/stock",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "branches",
+            "{{branchId}}",
+            "products",
+            "{{productId}}",
+            "stock"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stock\": 100\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Top products in stock by franchise",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const branchId = bru.getEnvVar(\"branchId\");",
+              "bru.setVar(\"branchId\", branchId);",
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);",
+              "const productId = bru.getEnvVar(\"productId\");",
+              "bru.setVar(\"productId\", productId);",
+              ""
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/top-products",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "top-products"
+          ],
+          "query": [],
+          "variable": []
+        }
+      }
+    },
+    {
+      "name": "Update franchise name",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/name",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "name"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"MC Donalds MCA\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update branch name",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);",
+              "const branchId = bru.getEnvVar(\"branchId\");",
+              "bru.setVar(\"branchId\", branchId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/name",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "branches",
+            "{{branchId}}",
+            "name"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Branch Santa Marta Maria Eugenia A\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Update product name",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const branchId = bru.getEnvVar(\"branchId\");",
+              "bru.setVar(\"branchId\", branchId);",
+              "const franchiseId = bru.getEnvVar(\"franchiseId\");",
+              "bru.setVar(\"franchiseId\", franchiseId);",
+              "const productId = bru.getEnvVar(\"productId\");",
+              "bru.setVar(\"productId\", productId);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "This request retrieves a list of users from the JSONPlaceholder API.",
+        "url": {
+          "raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/name",
+          "protocol": "",
+          "host": [
+            "{{franchise_service}}"
+          ],
+          "path": [
+            "franchises",
+            "{{franchiseId}}",
+            "branches",
+            "{{branchId}}",
+            "products",
+            "{{productId}}",
+            "name"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Macburgueron\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "franchise_service",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "franchiseId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "branchId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "default"
+    }
+  ]
+}

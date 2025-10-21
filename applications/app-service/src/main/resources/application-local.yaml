@@ -1,0 +1,6 @@
+aws:
+  region: "${AWS_REGION:us-east-1}"
+    
+logging:
+  level:
+    '[co.com.bancolombia]': "${LOG_LEVEL:DEBUG}"
