@@ -240,8 +240,8 @@ terraform destroy
 
 ### URLs de Acceso
 
-- **API Gateway**: `https://5wvyipqww0.execute-api.us-east-1.amazonaws.com/dev`
-- **ALB Directo**: `http://franchise-service-alb-2064631887.us-east-1.elb.amazonaws.com`
+- **API Gateway**: `https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev`
+- **ALB Directo**: `http://franchise-service-alb-xxxxxx87.us-east-1.elb.amazonaws.com`
 - **Swagger UI**: Agregar `/swagger-ui.html` a cualquiera de las URLs anteriores
 
 ### Troubleshooting
