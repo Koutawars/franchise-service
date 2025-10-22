@@ -25,6 +25,16 @@ module "dynamodb_franchise_table" {
   hash_key     = "pk"
   range_key    = "sk"
   ttl_enabled  = false
+  billing_mode = "PROVISIONED"
+
+  global_indexes = [
+    {
+      name            = "BranchProductsByStock"
+      hash_key        = "branchProductsKey"
+      range_key       = "stockSortKey"
+      projection_type = "ALL"
+    }
+  ]
 
   tags = {
     Environment = var.environment

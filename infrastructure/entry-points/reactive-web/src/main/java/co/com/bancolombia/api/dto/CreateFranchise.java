@@ -19,7 +19,7 @@ import lombok.Setter;
 public class CreateFranchise {
   @Nonnull
   @NotEmpty
-  @Schema(description = "Name of the franchise", example = "McDonald's", required = true)
+  @Schema(description = "Name of the franchise", example = "McDonald's")
   private String name;
 
   public Franchise toFranchise() {

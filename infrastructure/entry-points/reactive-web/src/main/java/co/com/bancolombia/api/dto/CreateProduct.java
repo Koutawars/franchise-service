@@ -20,11 +20,11 @@ import lombok.Setter;
 public class CreateProduct {
   @Nonnull
   @NotEmpty
-  @Schema(description = "Name of the product", example = "Big Mac", required = true)
+  @Schema(description = "Name of the product", example = "Big Mac")
   private String name;
   
   @NotNull
-  @Schema(description = "Initial stock quantity", example = "100", required = true)
+  @Schema(description = "Initial stock quantity", example = "100")
   private Integer stock;
 
   public Product toProduct(String franchiseId, String branchId) {

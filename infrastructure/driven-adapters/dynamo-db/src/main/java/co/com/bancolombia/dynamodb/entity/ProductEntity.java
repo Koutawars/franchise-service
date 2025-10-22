@@ -1,9 +1,7 @@
 package co.com.bancolombia.dynamodb.entity;
 
 import lombok.*;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 @Getter
 @Setter
@@ -17,10 +15,18 @@ public class ProductEntity {
   private String name;
   private String entityType;
   private Integer stock;
+  private String branchProductsKey;
+  private String stockSortKey;
 
   @DynamoDbPartitionKey
   public String getPk() { return pk; }
 
   @DynamoDbSortKey
   public String getSk() { return sk; }
+
+  @DynamoDbSecondaryPartitionKey(indexNames = "BranchProductsByStock")
+  public String getBranchProductsKey() { return branchProductsKey; }
+
+  @DynamoDbSecondarySortKey(indexNames = "BranchProductsByStock")
+  public String getStockSortKey() { return stockSortKey; }
 }

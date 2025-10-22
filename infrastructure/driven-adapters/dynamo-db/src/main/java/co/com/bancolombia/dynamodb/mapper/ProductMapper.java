@@ -21,6 +21,8 @@ public class ProductMapper {
         .entityType("Product")
         .name(product.getName())
         .stock(product.getStock())
+        .branchProductsKey(FRANCHISE + product.getFranchiseId() + "#" + BRANCH + product.getBranchId())
+        .stockSortKey(String.format("%010d", Integer.MAX_VALUE - product.getStock()))
         .build();
   }
 

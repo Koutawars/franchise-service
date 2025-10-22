@@ -12,7 +12,6 @@ import reactor.test.StepVerifier;
 
 import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,11 +52,10 @@ class RequestValidatorTest {
         Set<ConstraintViolation<String>> violations = Set.of(violation);
         when(validator.validate(testObject)).thenReturn(violations);
 
-        try {
-            requestValidator.validate(testObject).block();
-            org.junit.jupiter.api.Assertions.fail("Expected ValidationException to be thrown");
-        } catch (ValidationException e) {
-            org.junit.jupiter.api.Assertions.assertTrue(e.getMessage().contains("field: must not be null"));
-        }
+        StepVerifier.create(requestValidator.validate(testObject))
+                .expectErrorMatches(throwable -> 
+                    throwable instanceof ValidationException &&
+                    throwable.getMessage().contains("field: must not be null"))
+                .verify();
     }
 }

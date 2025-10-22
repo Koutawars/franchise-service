@@ -18,6 +18,6 @@ import lombok.Setter;
 public class UpdateName {
   @Nonnull
   @NotEmpty
-  @Schema(description = "New name", example = "Updated Name", required = true)
+  @Schema(description = "New name", example = "Updated Name")
   private String name;
 }
