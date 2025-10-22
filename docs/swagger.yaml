@@ -1,0 +1,412 @@
+openapi: 3.0.1
+info:
+  title: Franchise Service API
+  description: "RESTful API for managing franchises, branches, and products. This\
+    \ service provides endpoints to create, update, delete, and retrieve franchise-related\
+    \ entities following Clean Architecture principles."
+  contact:
+    name: API Support
+    email: support@franchise-service.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+  description: Local Development Server
+- url: https://api.franchise-service.com
+  description: Production Server
+tags:
+- name: Actuator
+  description: Monitor and interact
+  externalDocs:
+    description: Spring Boot Actuator Web API Documentation
+    url: https://docs.spring.io/spring-boot/docs/current/actuator-api/html/
+paths:
+  /actuator/prometheus:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'prometheus'
+      operationId: prometheus
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain;version=0.0.4;charset=utf-8:
+              schema:
+                type: object
+            application/openmetrics-text;version=1.0.0;charset=utf-8:
+              schema:
+                type: object
+            application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited:
+              schema:
+                type: object
+  /actuator/health/{*path}:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'health-path'
+      operationId: health-path
+      parameters:
+      - name: '*path'
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /actuator/health:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator web endpoint 'health'
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+            application/json:
+              schema:
+                type: object
+  /actuator:
+    get:
+      tags:
+      - Actuator
+      summary: Actuator root web endpoint
+      operationId: links
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.spring-boot.actuator.v3+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
+            application/vnd.spring-boot.actuator.v2+json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    $ref: "#/components/schemas/Link"
+  /api/v1/franchises:
+    post:
+      tags:
+      - Franchise Management
+      summary: Create a new franchise
+      operationId: createFranchise
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFranchise"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/branches:
+    post:
+      tags:
+      - Branch Management
+      summary: Create a new branch
+      operationId: createBranch
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBranch"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/branches/{branchId}/name:
+    patch:
+      tags:
+      - Branch Management
+      summary: Update branch name
+      operationId: updateBranchName
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      - name: branchId
+        in: path
+        required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateName"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/branches/{branchId}/products:
+    post:
+      tags:
+      - Product Management
+      summary: Create a new product
+      operationId: createProduct
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      - name: branchId
+        in: path
+        required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProduct"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/branches/{branchId}/products/{productId}:
+    delete:
+      tags:
+      - Product Management
+      summary: Delete a product
+      operationId: deleteProduct
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      - name: branchId
+        in: path
+        required: true
+      - name: productId
+        in: path
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/branches/{branchId}/products/{productId}/name:
+    patch:
+      tags:
+      - Product Management
+      summary: Update product name
+      operationId: updateProductName
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      - name: branchId
+        in: path
+        required: true
+      - name: productId
+        in: path
+        required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateName"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/branches/{branchId}/products/{productId}/stock:
+    patch:
+      tags:
+      - Product Management
+      summary: Update product stock
+      operationId: updateStock
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      - name: branchId
+        in: path
+        required: true
+      - name: productId
+        in: path
+        required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStock"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/name:
+    patch:
+      tags:
+      - Franchise Management
+      summary: Update franchise name
+      operationId: updateFranchiseName
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateName"
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+  /api/v1/franchises/{franchiseId}/top-products:
+    get:
+      tags:
+      - Product Management
+      summary: Get top products per branch
+      operationId: getTopProducts
+      parameters:
+      - name: franchiseId
+        in: path
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/StandardResponse"
+components:
+  schemas:
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+        templated:
+          type: boolean
+    CreateFranchise:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the franchise
+          example: McDonald's
+      description: Request to create a new franchise
+    StandardResponse:
+      type: object
+      properties:
+        responseCode:
+          type: string
+          description: Response code
+          example: "200"
+        message:
+          type: string
+          description: Response message
+          example: Success
+        timestamp:
+          type: string
+          description: Response timestamp
+          example: 2024-01-01T10:00:00Z
+        data:
+          type: object
+          description: Response data
+      description: Standard API response wrapper
+    CreateBranch:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the branch
+          example: Downtown Branch
+      description: Request to create a new branch
+    UpdateName:
+      required:
+      - name
+      type: object
+      properties:
+        name:
+          type: string
+          description: New name
+          example: Updated Name
+      description: Request to update a name
+    CreateProduct:
+      required:
+      - name
+      - stock
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the product
+          example: Big Mac
+        stock:
+          type: integer
+          description: Initial stock quantity
+          format: int32
+          example: 100
+      description: Request to create a new product
+    UpdateStock:
+      required:
+      - stock
+      type: object
+      properties:
+        stock:
+          type: integer
+          description: New stock quantity
+          format: int32
+          example: 50
+      description: Request to update product stock
