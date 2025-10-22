@@ -51,4 +51,6 @@ module "api_gateway" {
   project_name = var.project_name
   environment  = var.environment
   alb_dns_name = module.alb.alb_dns_name
+  aws_region   = var.aws_region
+  alb_arn      = module.alb.alb_arn
 }
