@@ -117,20 +117,8 @@ public class FranchiseUseCase {
           .key(FRANCHISE_ID, franchiseId);
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .flatMapMany(franchise -> franchiseRepository.findProductsByFranchise(franchiseId))
-          .collectList()
-          .flatMapMany(products -> Flux.fromIterable(
-              products.stream()
-                  .collect(Collectors.groupingBy(Product::getBranchId))
-                  .values()
-                  .stream()
-                  .map(branchProducts -> branchProducts.stream()
-                      .max(Comparator.comparing(Product::getStock))
-                      .orElse(null))
-                  .filter(Objects::nonNull)
-                  .toList()
-          ))
-          .doOnSubscribe(unused -> logBuilder.info("Top products per branch retrieved"))
+          .flatMapMany(franchise -> franchiseRepository.findTopProductsByFranchise(franchiseId))
+          .doOnSubscribe(unused -> logBuilder.info("Getting top products per branch"))
           .doOnError(error -> logBuilder.error("Error getting top products per branch"))
           .doOnComplete(() -> logBuilder.info("Top products per branch retrieved"));
     });

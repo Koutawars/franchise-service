@@ -177,17 +177,16 @@ class FranchiseUseCaseTest {
 
     @Test
     void getTopProductsPerBranch_Success() {
-        Product product1 = Product.builder().id("p1").stock(10).branchId("branch-1").build();
-        Product product2 = Product.builder().id("p2").stock(20).branchId("branch-1").build();
-        Product product3 = Product.builder().id("p3").stock(15).branchId("branch-2").build();
+        Product product1 = Product.builder().id("p1").stock(20).branchId("branch-1").build();
+        Product product2 = Product.builder().id("p2").stock(15).branchId("branch-2").build();
 
         when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-        when(franchiseRepository.findProductsByFranchise("franchise-1"))
-                .thenReturn(Flux.fromIterable(List.of(product1, product2, product3)));
+        when(franchiseRepository.findTopProductsByFranchise("franchise-1"))
+                .thenReturn(Flux.fromIterable(List.of(product1, product2)));
 
         StepVerifier.create(franchiseUseCase.getTopProductsPerBranch("franchise-1"))
-                .expectNext(product2) // highest stock in branch-1
-                .expectNext(product3) // highest stock in branch-2
+                .expectNext(product1)
+                .expectNext(product2)
                 .verifyComplete();
     }
 
@@ -303,7 +302,7 @@ class FranchiseUseCaseTest {
     @Test
     void getTopProductsPerBranch_EmptyProducts() {
         when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-        when(franchiseRepository.findProductsByFranchise("franchise-1"))
+        when(franchiseRepository.findTopProductsByFranchise("franchise-1"))
                 .thenReturn(Flux.empty());
 
         StepVerifier.create(franchiseUseCase.getTopProductsPerBranch("franchise-1"))

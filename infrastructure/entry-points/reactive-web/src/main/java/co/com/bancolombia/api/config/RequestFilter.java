@@ -28,7 +28,7 @@ public class RequestFilter implements WebFilter {
 
     logBuilder.key("method", exchange.getRequest().getMethod().toString())
         .key("path", exchange.getRequest().getURI().getPath())
-        .key("traceId", traceId);
+        .key(TRACE_ID_KEY, traceId);
 
     logBuilder.info("Incoming request");
 
