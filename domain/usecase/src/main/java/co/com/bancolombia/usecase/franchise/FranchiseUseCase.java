@@ -13,10 +13,6 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Comparator;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 @RequiredArgsConstructor
 public class FranchiseUseCase {
   public static final String PRODUCT_ID = "productId";

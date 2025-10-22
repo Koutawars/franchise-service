@@ -28,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,13 +53,13 @@ class FranchiseDynamoDBTest {
 
     @BeforeEach
     void setUp() {
-        when(connectionFactory.table(eq(tableName), eq(TableSchema.fromBean(FranchiseEntity.class))))
+        when(connectionFactory.table(tableName, TableSchema.fromBean(FranchiseEntity.class)))
                 .thenReturn(franchiseTable);
-        when(connectionFactory.table(eq(tableName), eq(TableSchema.fromBean(BranchEntity.class))))
+        when(connectionFactory.table(tableName, TableSchema.fromBean(BranchEntity.class)))
                 .thenReturn(branchTable);
-        when(connectionFactory.table(eq(tableName), eq(TableSchema.fromBean(ProductEntity.class))))
+        when(connectionFactory.table(tableName, TableSchema.fromBean(ProductEntity.class)))
                 .thenReturn(productTable);
-        when(connectionFactory.table(eq(tableName), eq(TableSchema.fromBean(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class))))
+        when(connectionFactory.table(tableName, TableSchema.fromBean(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
                 .thenReturn(productStockMaxTable);
         
         when(logger.with(any(Context.class))).thenReturn(logBuilder);

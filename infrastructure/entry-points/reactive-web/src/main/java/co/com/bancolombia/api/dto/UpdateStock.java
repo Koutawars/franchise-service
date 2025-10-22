@@ -16,6 +16,6 @@ import lombok.Setter;
 @Schema(description = "Request to update product stock")
 public class UpdateStock {
   @NotNull
-  @Schema(description = "New stock quantity", example = "50", required = true)
+  @Schema(description = "New stock quantity", example = "50")
   private Integer stock;
 }

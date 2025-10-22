@@ -11,8 +11,6 @@ import software.amazon.awssdk.metrics.MetricPublisher;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 
-import java.net.URI;
-
 @Configuration
 public class DynamoDBConfig {
   @Bean
@@ -30,6 +28,7 @@ public class DynamoDBConfig {
   @Profile({"dev", "cer", "pdn", "prod"})
   public DynamoDbAsyncClient amazonDynamoDBAsync(MetricPublisher publisher, @Value("${aws.region}") String region) {
     return DynamoDbAsyncClient.builder()
+        .credentialsProvider(WebIdentityTokenFileCredentialsProvider.create())
         .region(Region.of(region))
         .overrideConfiguration(o -> o.addMetricPublisher(publisher))
         .build();

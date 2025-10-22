@@ -30,6 +30,8 @@ public class FranchiseDynamoDB implements FranchiseRepository {
   public static final String TABLE_NAME_STRING = "tableName";
   public static final String BRANCH = "BRANCH#";
   public static final String FRANCHISE = "FRANCHISE#";
+  public static final String PRODUCT = "#PRODUCT#";
+  public static final String FRANCHISE_ID = "franchiseId";
   private final String tableName;
   private final DynamoDbAsyncTable<FranchiseEntity> franchiseTable;
   private final DynamoDbAsyncTable<BranchEntity> branchTable;
@@ -118,7 +120,7 @@ public class FranchiseDynamoDB implements FranchiseRepository {
     return Mono.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
           .key(TABLE_NAME_STRING, tableName)
-          .key("franchiseId", franchiseId)
+          .key(FRANCHISE_ID, franchiseId)
           .key("branchId", branchId);
       logBuilder.info("finding stock max");
       return Mono.fromFuture(productStockMaxTable.getItem(ProductStockMaxEntitiy.builder()
@@ -174,14 +176,14 @@ public class FranchiseDynamoDB implements FranchiseRepository {
   private Mono<ProductStockMaxEntitiy> recalculateMaxStock(String franchiseId, String branchId) {
     return Mono.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
-          .key("franchiseId", franchiseId)
+          .key(FRANCHISE_ID, franchiseId)
           .key("branchId", branchId);
       logBuilder.info("recalculating max stock from main table");
       
       QueryConditional queryConditional = QueryConditional.sortBeginsWith(
           Key.builder()
               .partitionValue(FRANCHISE + franchiseId)
-              .sortValue(BRANCH + branchId + "#PRODUCT#")
+              .sortValue(BRANCH + branchId + PRODUCT)
               .build());
       
       return Flux.from(productTable.query(queryConditional))
@@ -198,12 +200,12 @@ public class FranchiseDynamoDB implements FranchiseRepository {
     return Mono.deferContextual(ctx -> {
       Key key = Key.builder()
           .partitionValue(FRANCHISE + franchiseId)
-          .sortValue(BRANCH + branchId + "#PRODUCT#" + id)
+          .sortValue(BRANCH + branchId + PRODUCT + id)
           .build();
       LogBuilder logBuilder = logger.with(ctx)
           .key(TABLE_NAME_STRING, tableName)
           .key("partitionValue", FRANCHISE + franchiseId)
-          .key("sortValue", BRANCH + branchId + "#PRODUCT#" + id);
+          .key("sortValue", BRANCH + branchId + PRODUCT + id);
       logBuilder.info("find product");
       return Mono.fromFuture(productTable.getItem(key))
           .filter(Objects::nonNull)
@@ -233,7 +235,7 @@ public class FranchiseDynamoDB implements FranchiseRepository {
     return Flux.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
           .key(TABLE_NAME_STRING, tableName)
-          .key("franchiseId", franchiseId);
+          .key(FRANCHISE_ID, franchiseId);
       logBuilder.info("Getting top products by franchise");
 
       QueryConditional queryConditional = QueryConditional.sortBeginsWith(
