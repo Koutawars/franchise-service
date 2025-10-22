@@ -19,7 +19,7 @@ import lombok.Setter;
 public class CreateBranch {
   @Nonnull
   @NotEmpty
-  @Schema(description = "Name of the branch", example = "Downtown Branch", required = true)
+  @Schema(description = "Name of the branch", example = "Downtown Branch")
   private String name;
 
   public Branch toBranch(String franchiseId) {

@@ -29,10 +29,11 @@ class CustomErrorAttributesTest {
 
         Map<String, Object> attributes = customErrorAttributes.getErrorAttributes(request, ErrorAttributeOptions.defaults());
 
-        assertThat(attributes.get("status")).isEqualTo(400);
-        assertThat(attributes.get("responseCode")).isEqualTo("VALIDATION_ERROR");
-        assertThat(attributes.get("message")).isEqualTo("Validation failed");
-        assertThat(attributes.get("timestamp")).isNotNull();
+        assertThat(attributes)
+                .containsEntry("status", 400)
+                .containsEntry("responseCode", "VALIDATION_ERROR")
+                .containsEntry("message", "Validation failed")
+                .containsKey("timestamp");
     }
 
     @Test
@@ -44,9 +45,10 @@ class CustomErrorAttributesTest {
 
         Map<String, Object> attributes = customErrorAttributes.getErrorAttributes(request, ErrorAttributeOptions.defaults());
 
-        assertThat(attributes.get("status")).isEqualTo(500);
-        assertThat(attributes.get("responseCode")).isEqualTo("INTERNAL_SERVER_ERROR");
-        assertThat(attributes.get("message")).isEqualTo("Internal server error");
-        assertThat(attributes.get("timestamp")).isNotNull();
+        assertThat(attributes)
+                .containsEntry("status", 500)
+                .containsEntry("responseCode", "INTERNAL_SERVER_ERROR")
+                .containsEntry("message", "Internal server error")
+                .containsKey("timestamp");
     }
 }
