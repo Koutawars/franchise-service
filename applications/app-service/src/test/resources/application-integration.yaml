@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: "franchise-service-integration-test"
+aws:
+  dynamodb:
+    franchiseTable: "franchise-test-table"
+logging:
+  level:
+    root: "WARN"
+    '[co.com.bancolombia]': "INFO"
