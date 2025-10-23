@@ -67,7 +67,17 @@ class FranchiseIntegrationTest {
             KeySchemaElement.builder().attributeName("sk").keyType(KeyType.RANGE).build())
         .attributeDefinitions(
             AttributeDefinition.builder().attributeName("pk").attributeType(ScalarAttributeType.S).build(),
-            AttributeDefinition.builder().attributeName("sk").attributeType(ScalarAttributeType.S).build())
+            AttributeDefinition.builder().attributeName("sk").attributeType(ScalarAttributeType.S).build(),
+            AttributeDefinition.builder().attributeName("branchProductsKey").attributeType(ScalarAttributeType.S).build(),
+            AttributeDefinition.builder().attributeName("stockSortKey").attributeType(ScalarAttributeType.S).build())
+        .globalSecondaryIndexes(
+            GlobalSecondaryIndex.builder()
+                .indexName("BranchProductsByStock")
+                .keySchema(
+                    KeySchemaElement.builder().attributeName("branchProductsKey").keyType(KeyType.HASH).build(),
+                    KeySchemaElement.builder().attributeName("stockSortKey").keyType(KeyType.RANGE).build())
+                .projection(Projection.builder().projectionType(ProjectionType.ALL).build())
+                .build())
         .billingMode(BillingMode.PAY_PER_REQUEST)
         .build());
   }

@@ -64,6 +64,7 @@ franchise-service/
 ### Prerrequisitos
 - Java 17+
 - Variables de entorno AWS configuradas (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+- Las variables de AWS que se configura, tienen que tener permisos para lectura y escitura de la tabla de dynamodb. 
 
 ### Ejecución Local
 
