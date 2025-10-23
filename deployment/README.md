@@ -1,26 +1,26 @@
-# Deployment Guide
+# Guía de Despliegue
 
-## Architecture Overview
+## Descripción de la Arquitectura
 
-This deployment uses AWS free tier resources:
+Este despliegue utiliza recursos del free tier de AWS:
 
-- **ECR**: Container registry (500 MB storage free)
-- **ECS Fargate**: Container orchestration (free tier: 20 GB-hours per month)
+- **ECR**: Registro de contenedores (500 MB de almacenamiento gratis)
+- **ECS Fargate**: Orquestación de contenedores (free tier: 20 GB-horas por mes)
 - **ALB**: Application Load Balancer
-- **API Gateway**: REST API endpoint (1M requests free per month)
-- **DynamoDB**: NoSQL database (25 GB storage free)
-- **VPC**: Virtual Private Cloud with 2 public subnets
+- **API Gateway**: Endpoint REST API (1M peticiones gratis por mes)
+- **DynamoDB**: Base de datos NoSQL (25 GB de almacenamiento gratis)
+- **VPC**: Virtual Private Cloud con 2 subnets públicas
 
-## Prerequisites
+## Prerrequisitos
 
-1. AWS CLI configured with appropriate credentials
-2. Docker installed
-3. Terraform installed
-4. Java 17+ and Gradle
+1. AWS CLI configurado con credenciales apropiadas
+2. Docker instalado
+3. Terraform instalado
+4. Java 17+ y Gradle
 
-## Deployment Steps
+## Pasos de Despliegue
 
-### 1. Deploy Infrastructure
+### 1. Desplegar Infraestructura
 
 ```bash
 cd deployment/terraform
@@ -29,7 +29,7 @@ terraform plan
 terraform apply
 ```
 
-### 2. Build and Push Docker Image
+### 2. Construir y Subir Imagen Docker
 
 ```bash
 cd deployment/scripts
@@ -37,7 +37,7 @@ chmod +x build-and-push.sh
 ./build-and-push.sh
 ```
 
-### 3. Update ECS Service
+### 3. Actualizar Servicio ECS
 
 ```bash
 aws ecs update-service \
@@ -47,7 +47,7 @@ aws ecs update-service \
   --region us-east-1
 ```
 
-### 4. One-Command Deployment
+### 4. Despliegue con Un Solo Comando
 
 ```bash
 cd deployment/scripts
@@ -55,37 +55,37 @@ chmod +x deploy.sh
 ./deploy.sh
 ```
 
-## Access Points
+## Puntos de Acceso
 
-After deployment, you'll have two access points:
+Después del despliegue, tendrás dos puntos de acceso:
 
 1. **API Gateway**: `https://{api-id}.execute-api.us-east-1.amazonaws.com/dev`
-2. **ALB Direct**: `http://{alb-dns-name}`
+2. **ALB Directo**: `http://{alb-dns-name}`
 
-## Free Tier Considerations
+## Consideraciones del Free Tier
 
-- **ECS Fargate**: 256 CPU, 512 MB memory (minimal for free tier)
-- **ALB**: Charges apply after free tier limits
-- **API Gateway**: 1M requests/month free
-- **DynamoDB**: 25 GB storage, 25 RCU/WCU free
-- **ECR**: 500 MB storage free
+- **ECS Fargate**: 256 CPU, 512 MB memoria (mínimo para free tier)
+- **ALB**: Se aplican cargos después de los límites del free tier
+- **API Gateway**: 1M peticiones/mes gratis
+- **DynamoDB**: 25 GB almacenamiento, 25 RCU/WCU gratis
+- **ECR**: 500 MB almacenamiento gratis
 
-## Monitoring
+## Monitoreo
 
-- CloudWatch logs: `/ecs/franchise-service`
-- ECS service metrics in CloudWatch
-- ALB target group health checks
+- Logs de CloudWatch: `/ecs/franchise-service`
+- Métricas del servicio ECS en CloudWatch
+- Health checks del target group del ALB
 
-## Cleanup
+## Limpieza
 
 ```bash
 cd deployment/terraform
 terraform destroy
 ```
 
-## Troubleshooting
+## Solución de Problemas
 
-1. **ECS Task not starting**: Check CloudWatch logs
-2. **Health check failing**: Verify `/actuator/health` endpoint
-3. **API Gateway 502**: Check ALB target group health
-4. **DynamoDB access**: Verify IAM roles and policies
+1. **Tarea ECS no inicia**: Revisar logs de CloudWatch
+2. **Health check fallando**: Verificar endpoint `/actuator/health`
+3. **API Gateway 502**: Revisar salud del target group del ALB
+4. **Acceso a DynamoDB**: Verificar roles y políticas IAM
