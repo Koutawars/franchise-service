@@ -197,13 +197,13 @@ gradle clean build
 docker build -f deployment/docker/Dockerfile -t franchise-service .
 
 # 3. Etiquetar para ECR
-docker tag franchise-service:latest 660183939224.dkr.ecr.us-east-1.amazonaws.com/franchise-service:latest
+docker tag franchise-service:latest <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/franchise-service:latest
 
 # 4. Autenticarse en ECR (usar CMD, no PowerShell)
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 660183939224.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com
 
 # 5. Subir imagen a ECR
-docker push 660183939224.dkr.ecr.us-east-1.amazonaws.com/franchise-service:latest
+docker push <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/franchise-service:latest
 
 # 6. Forzar nuevo despliegue en ECS
 aws ecs update-service --cluster franchise-service-cluster --service franchise-service-service --force-new-deployment --region us-east-1
@@ -241,9 +241,8 @@ terraform destroy
 
 ### URLs de Acceso
 
-- **API Gateway**: `https://5wvyipqww0.execute-api.us-east-1.amazonaws.com/dev`
-- **ALB Directo**: `http://franchise-service-alb-2064631887.us-east-1.elb.amazonaws.com`
-- **Swagger UI**: Agregar `/swagger-ui.html` a cualquiera de las URLs anteriores
+- **API Gateway**: `https://<api-gateway-id>.execute-api.us-east-1.amazonaws.com/dev`
+- **ALB Directo**: `http://<alb-dns-name>.us-east-1.elb.amazonaws.com`
 
 ### Troubleshooting
 
