@@ -3,11 +3,9 @@ package co.com.bancolombia.dynamodb.adapter;
 import co.com.bancolombia.dynamodb.entity.BranchEntity;
 import co.com.bancolombia.dynamodb.entity.FranchiseEntity;
 import co.com.bancolombia.dynamodb.entity.ProductEntity;
-import co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy;
 import co.com.bancolombia.dynamodb.mapper.BranchMapper;
 import co.com.bancolombia.dynamodb.mapper.FranchiseMapper;
 import co.com.bancolombia.dynamodb.mapper.ProductMapper;
-import co.com.bancolombia.dynamodb.mapper.ProductStockMaxMapper;
 import co.com.bancolombia.model.franchise.Branch;
 import co.com.bancolombia.model.franchise.Franchise;
 import co.com.bancolombia.model.franchise.Product;
@@ -23,6 +21,8 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncIndex;
 import java.util.Objects;
 
 @Repository
@@ -36,7 +36,7 @@ public class FranchiseDynamoDB implements FranchiseRepository {
   private final DynamoDbAsyncTable<FranchiseEntity> franchiseTable;
   private final DynamoDbAsyncTable<BranchEntity> branchTable;
   private final DynamoDbAsyncTable<ProductEntity> productTable;
-  private final DynamoDbAsyncTable<ProductStockMaxEntitiy> productStockMaxTable;
+  private final DynamoDbAsyncIndex<ProductEntity> branchProductsByStockIndex;
   private final Logger logger;
 
   public FranchiseDynamoDB(@Value("${aws.dynamodb.franchiseTable}") String tableName,
@@ -46,7 +46,7 @@ public class FranchiseDynamoDB implements FranchiseRepository {
     this.franchiseTable = connectionFactory.table(tableName, TableSchema.fromBean(FranchiseEntity.class));
     this.branchTable = connectionFactory.table(tableName, TableSchema.fromBean(BranchEntity.class));
     this.productTable = connectionFactory.table(tableName, TableSchema.fromBean(ProductEntity.class));
-    this.productStockMaxTable = connectionFactory.table(tableName, TableSchema.fromBean(ProductStockMaxEntitiy.class));
+    this.branchProductsByStockIndex = productTable.index("BranchProductsByStock");
     this.logger = logger;
   }
 
@@ -116,82 +116,33 @@ public class FranchiseDynamoDB implements FranchiseRepository {
     });
   }
 
-  public Mono<ProductStockMaxEntitiy> findStockMaxByFranchiseIdAndBranch(String franchiseId, String branchId) {
-    return Mono.deferContextual(ctx -> {
-      LogBuilder logBuilder = logger.with(ctx)
-          .key(TABLE_NAME_STRING, tableName)
-          .key(FRANCHISE_ID, franchiseId)
-          .key("branchId", branchId);
-      logBuilder.info("finding stock max");
-      return Mono.fromFuture(productStockMaxTable.getItem(ProductStockMaxEntitiy.builder()
-              .pk(FRANCHISE + franchiseId)
-              .sk("STOCK_MAX#" + BRANCH + branchId)
-              .build()))
-          .filter(Objects::nonNull)
-          .doOnSuccess(unused -> logBuilder.info("stock max found"))
-          .doOnError(error -> logBuilder.error("Error finding stock max", error));
-    });
-  }
 
-  public Mono<ProductStockMaxEntitiy> saveProductStockMax(ProductEntity productEntity) {
-    ProductStockMaxEntitiy productStockMaxEntitiy = ProductStockMaxMapper.toStockMaxEntity(productEntity);
-    return Mono.deferContextual(ctx -> {
-      LogBuilder logBuilder = logger.with(ctx)
-          .key(TABLE_NAME_STRING, tableName)
-          .key("productEntity", productEntity);
-      logBuilder.info("save stock max");
-      return Mono.fromFuture(productStockMaxTable.putItem(productStockMaxEntitiy))
-          .doOnSuccess(unused -> logBuilder.info("stock max saved"))
-          .doOnError(error -> logBuilder.error("Error saving stock max", error))
-          .thenReturn(productStockMaxEntitiy);
-    });
-  }
 
   @Override
   public Mono<Product> saveProduct(Product product) {
-    ProductEntity productEntity = ProductMapper.toEntity(product);
     return Mono.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
           .key(TABLE_NAME_STRING, tableName)
           .key("product", product);
-      logBuilder.info("add product");
-      return Mono.fromFuture(productTable.putItem(productEntity))
-          .doOnSuccess(unused -> logBuilder.info("product saved"))
-          .doOnError(error -> logBuilder.error("Error saving product", error))
-          .then(findStockMaxByFranchiseIdAndBranch(product.getFranchiseId(), product.getBranchId())
-              .switchIfEmpty(saveProductStockMax(productEntity))
-              .flatMap(currentMax -> {
-                boolean isNewHigher = product.getStock() > currentMax.getStock();
-                boolean isSameProductLower = currentMax.getProductId().equals("PRODUCT#" + product.getId()) &&
-                    product.getStock() < currentMax.getStock();
+      logBuilder.info("save product");
 
-                if (isNewHigher) return saveProductStockMax(productEntity);
-                if (isSameProductLower) return recalculateMaxStock(product.getFranchiseId(), product.getBranchId());
-                return Mono.just(currentMax);
-              }))
-          .then(Mono.fromCallable(() -> ProductMapper.toDomain(productEntity)));
-    });
-  }
+      Mono<Product> existingProductMono = product.getId() != null
+          ? findProductById(product.getId(), product.getBranchId(), product.getFranchiseId())
+          : Mono.empty();
 
-  private Mono<ProductStockMaxEntitiy> recalculateMaxStock(String franchiseId, String branchId) {
-    return Mono.deferContextual(ctx -> {
-      LogBuilder logBuilder = logger.with(ctx)
-          .key(FRANCHISE_ID, franchiseId)
-          .key("branchId", branchId);
-      logBuilder.info("recalculating max stock from main table");
-      
-      QueryConditional queryConditional = QueryConditional.sortBeginsWith(
-          Key.builder()
-              .partitionValue(FRANCHISE + franchiseId)
-              .sortValue(BRANCH + branchId + PRODUCT)
-              .build());
-      
-      return Flux.from(productTable.query(queryConditional))
-          .flatMap(page -> Flux.fromIterable(page.items()))
-          .reduce((p1, p2) -> p1.getStock() > p2.getStock() ? p1 : p2)
-          .flatMap(this::saveProductStockMax)
-          .doOnSuccess(unused -> logBuilder.info("max stock recalculated"))
-          .doOnError(error -> logBuilder.error("Error recalculating max stock", error));
+      return existingProductMono
+          .flatMap(existingProduct -> {
+            ProductEntity oldEntity = ProductMapper.toEntity(existingProduct);
+            return Mono.fromFuture(productTable.deleteItem(oldEntity))
+                .doOnSuccess(unused -> logBuilder.info("old product deleted for update"));
+          })
+          .then(Mono.defer(() -> {
+            ProductEntity newEntity = ProductMapper.toEntity(product);
+            return Mono.fromFuture(productTable.putItem(newEntity))
+                .doOnSuccess(unused -> logBuilder.info("product saved"))
+                .doOnError(error -> logBuilder.error("Error saving product", error))
+                .thenReturn(ProductMapper.toDomain(newEntity));
+          }));
     });
   }
 
@@ -236,23 +187,39 @@ public class FranchiseDynamoDB implements FranchiseRepository {
       LogBuilder logBuilder = logger.with(ctx)
           .key(TABLE_NAME_STRING, tableName)
           .key(FRANCHISE_ID, franchiseId);
-      logBuilder.info("Getting top products by franchise");
+      logBuilder.info("Getting top products by franchise using GSI");
 
-      QueryConditional queryConditional = QueryConditional.sortBeginsWith(
-          Key.builder()
-              .partitionValue(FRANCHISE + franchiseId)
-              .sortValue("STOCK_MAX#" + BRANCH)
-              .build());
-
-      return Flux.from(productStockMaxTable.query(queryConditional))
-          .flatMap(page -> Flux.fromIterable(page.items()))
-          .flatMap(stockMaxEntity -> {
-            String productId = stockMaxEntity.getProductId().replace("PRODUCT#", "");
-            String branchId = stockMaxEntity.getBranchId().replace(BRANCH, "");
-            return findProductById(productId, branchId, franchiseId);
+      return findBranchesByFranchise(franchiseId)
+          .flatMap(branchId -> {
+            QueryConditional queryConditional = QueryConditional.keyEqualTo(
+                Key.builder()
+                    .partitionValue(FRANCHISE + franchiseId + "#" + BRANCH + branchId)
+                    .build());
+            
+            QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .limit(1)
+                .build();
+            
+            return Flux.from(branchProductsByStockIndex.query(request))
+                .flatMap(page -> Flux.fromIterable(page.items()))
+                .next()
+                .map(ProductMapper::toDomain);
           })
           .doOnComplete(() -> logBuilder.info("top products by franchise retrieved"))
           .doOnError(error -> logBuilder.error("Error getting top products by franchise", error));
     });
+  }
+
+  private Flux<String> findBranchesByFranchise(String franchiseId) {
+    QueryConditional queryConditional = QueryConditional.sortBeginsWith(
+        Key.builder()
+            .partitionValue(FRANCHISE + franchiseId)
+            .sortValue(BRANCH)
+            .build());
+    
+    return Flux.from(branchTable.query(queryConditional))
+        .flatMap(page -> Flux.fromIterable(page.items()))
+        .map(branch -> branch.getSk().replace(BRANCH, ""));
   }
 }
