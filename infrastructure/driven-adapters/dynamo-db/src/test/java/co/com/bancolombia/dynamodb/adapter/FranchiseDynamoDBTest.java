@@ -15,13 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.enhanced.dynamodb.model.PagePublisher;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.*;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -42,7 +37,7 @@ class FranchiseDynamoDBTest {
     @Mock
     private DynamoDbAsyncTable<ProductEntity> productTable;
     @Mock
-    private DynamoDbAsyncTable<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy> productStockMaxTable;
+    private DynamoDbAsyncIndex<ProductEntity> branchProductsByStockIndex;
     @Mock
     private Logger logger;
     @Mock
@@ -59,8 +54,8 @@ class FranchiseDynamoDBTest {
                 .thenReturn(branchTable);
         when(connectionFactory.table(tableName, TableSchema.fromBean(ProductEntity.class)))
                 .thenReturn(productTable);
-        when(connectionFactory.table(tableName, TableSchema.fromBean(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(productStockMaxTable);
+        when(productTable.index("BranchProductsByStock"))
+                .thenReturn(branchProductsByStockIndex);
         
         when(logger.with(any(Context.class))).thenReturn(logBuilder);
         when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
@@ -153,7 +148,6 @@ class FranchiseDynamoDBTest {
     @Test
     void shouldSaveProduct() {
         Product product = Product.builder()
-                .id("1")
                 .name("Test Product")
                 .stock(10)
                 .franchiseId("1")
@@ -162,14 +156,9 @@ class FranchiseDynamoDBTest {
 
         when(productTable.putItem(any(ProductEntity.class)))
                 .thenReturn(CompletableFuture.completedFuture(null));
-        when(productStockMaxTable.getItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-        when(productStockMaxTable.putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
 
         StepVerifier.create(repository.saveProduct(product))
                 .expectNextMatches(result -> 
-                    result.getId().equals("1") && 
                     result.getName().equals("Test Product") &&
                     result.getStock().equals(10) &&
                     result.getFranchiseId().equals("1") &&
@@ -237,8 +226,16 @@ class FranchiseDynamoDBTest {
 
 
     @Test
-    void shouldSaveProductWithNewMaxStock() {
-        Product product = Product.builder()
+    void shouldUpdateProductWithDeleteAndInsert() {
+        Product existingProduct = Product.builder()
+                .id("1")
+                .name("Test Product")
+                .stock(50)
+                .franchiseId("1")
+                .branchId("1")
+                .build();
+
+        Product updatedProduct = Product.builder()
                 .id("1")
                 .name("Test Product")
                 .stock(100)
@@ -246,123 +243,38 @@ class FranchiseDynamoDBTest {
                 .branchId("1")
                 .build();
 
+        ProductEntity existingEntity = ProductEntity.builder()
+                .pk("FRANCHISE#1")
+                .sk("BRANCH#1#PRODUCT#1")
+                .name("Test Product")
+                .stock(50)
+                .build();
+
+        when(productTable.getItem(any(Key.class)))
+                .thenReturn(CompletableFuture.completedFuture(existingEntity));
+        when(productTable.deleteItem(any(ProductEntity.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
         when(productTable.putItem(any(ProductEntity.class)))
                 .thenReturn(CompletableFuture.completedFuture(null));
-        when(productStockMaxTable.getItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-        when(productStockMaxTable.putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
 
-        StepVerifier.create(repository.saveProduct(product))
+        StepVerifier.create(repository.saveProduct(updatedProduct))
                 .expectNextMatches(result -> result.getStock().equals(100))
                 .verifyComplete();
 
-        verify(productStockMaxTable, times(1)).putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class));
+        verify(productTable, times(1)).deleteItem(any(ProductEntity.class));
+        verify(productTable, times(1)).putItem(any(ProductEntity.class));
     }
 
-    @Test
-    void shouldUpdateMaxStockWhenNewProductHasHigherStock() {
-        Product product = Product.builder()
-                .id("2")
-                .name("New Product")
-                .stock(150)
-                .franchiseId("1")
-                .branchId("1")
-                .build();
 
-        co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy existingMax = 
-            co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.builder()
-                .pk("FRANCHISE#1")
-                .sk("STOCK_MAX#BRANCH#1")
-                .productId("PRODUCT#1")
-                .stock(100)
-                .branchId("BRANCH#1")
-                .build();
 
-        when(productTable.putItem(any(ProductEntity.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-        when(productStockMaxTable.getItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(existingMax));
-        when(productStockMaxTable.putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
 
-        StepVerifier.create(repository.saveProduct(product))
-                .expectNextMatches(result -> result.getStock().equals(150))
-                .verifyComplete();
-
-        verify(productStockMaxTable, times(1)).putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class));
-    }
-
-    @Test
-    void shouldRecalculateMaxStockWhenCurrentMaxIsReduced() {
-        Product product = Product.builder()
-                .id("1")
-                .name("Test Product")
-                .stock(50)
-                .franchiseId("1")
-                .branchId("1")
-                .build();
-
-        co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy existingMax = 
-            co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.builder()
-                .pk("FRANCHISE#1")
-                .sk("STOCK_MAX#BRANCH#1")
-                .productId("PRODUCT#1")
-                .stock(100)
-                .branchId("BRANCH#1")
-                .build();
-
-        ProductEntity product1 = ProductEntity.builder()
-                .pk("FRANCHISE#1")
-                .sk("BRANCH#1#PRODUCT#1")
-                .name("Product 1")
-                .stock(50)
-                .build();
-
-        ProductEntity product2 = ProductEntity.builder()
-                .pk("FRANCHISE#1")
-                .sk("BRANCH#1#PRODUCT#2")
-                .name("Product 2")
-                .stock(80)
-                .build();
-
-        Page<ProductEntity> page = mock(Page.class);
-        when(page.items()).thenReturn(Arrays.asList(product1, product2));
-
-        PagePublisher<ProductEntity> pagePublisher = mock(PagePublisher.class);
-        doAnswer(invocation -> {
-            org.reactivestreams.Subscriber<Page<ProductEntity>> subscriber = invocation.getArgument(0);
-            subscriber.onSubscribe(mock(org.reactivestreams.Subscription.class));
-            subscriber.onNext(page);
-            subscriber.onComplete();
-            return null;
-        }).when(pagePublisher).subscribe(any(org.reactivestreams.Subscriber.class));
-
-        when(productTable.putItem(any(ProductEntity.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-        when(productStockMaxTable.getItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(existingMax));
-        when(productTable.query(any(QueryConditional.class)))
-                .thenReturn(pagePublisher);
-        when(productStockMaxTable.putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-
-        StepVerifier.create(repository.saveProduct(product))
-                .expectNextMatches(result -> result.getStock().equals(50))
-                .verifyComplete();
-
-        verify(productStockMaxTable, times(1)).putItem(any(co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.class));
-    }
 
     @Test
     void shouldFindTopProductsByFranchise() {
-        co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy stockMax1 = 
-            co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy.builder()
+        BranchEntity branch1 = BranchEntity.builder()
                 .pk("FRANCHISE#1")
-                .sk("STOCK_MAX#BRANCH#1")
-                .productId("PRODUCT#1")
-                .stock(100)
-                .branchId("BRANCH#1")
+                .sk("BRANCH#1")
+                .name("Branch 1")
                 .build();
 
         ProductEntity product1 = ProductEntity.builder()
@@ -370,24 +282,38 @@ class FranchiseDynamoDBTest {
                 .sk("BRANCH#1#PRODUCT#1")
                 .name("Product 1")
                 .stock(100)
+                .branchProductsKey("FRANCHISE#1#BRANCH#1")
+                .stockSortKey("0000000000")
                 .build();
 
-        Page<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy> page = mock(Page.class);
-        when(page.items()).thenReturn(Arrays.asList(stockMax1));
+        Page<BranchEntity> branchPage = mock(Page.class);
+        when(branchPage.items()).thenReturn(Arrays.asList(branch1));
 
-        PagePublisher<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy> pagePublisher = mock(PagePublisher.class);
+        PagePublisher<BranchEntity> branchPagePublisher = mock(PagePublisher.class);
         doAnswer(invocation -> {
-            org.reactivestreams.Subscriber<Page<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy>> subscriber = invocation.getArgument(0);
+            org.reactivestreams.Subscriber<Page<BranchEntity>> subscriber = invocation.getArgument(0);
             subscriber.onSubscribe(mock(org.reactivestreams.Subscription.class));
-            subscriber.onNext(page);
+            subscriber.onNext(branchPage);
             subscriber.onComplete();
             return null;
-        }).when(pagePublisher).subscribe(any(org.reactivestreams.Subscriber.class));
+        }).when(branchPagePublisher).subscribe(any(org.reactivestreams.Subscriber.class));
 
-        when(productStockMaxTable.query(any(QueryConditional.class)))
-                .thenReturn(pagePublisher);
-        when(productTable.getItem(any(Key.class)))
-                .thenReturn(CompletableFuture.completedFuture(product1));
+        Page<ProductEntity> productPage = mock(Page.class);
+        when(productPage.items()).thenReturn(Arrays.asList(product1));
+
+        PagePublisher<ProductEntity> productPagePublisher = mock(PagePublisher.class);
+        doAnswer(invocation -> {
+            org.reactivestreams.Subscriber<Page<ProductEntity>> subscriber = invocation.getArgument(0);
+            subscriber.onSubscribe(mock(org.reactivestreams.Subscription.class));
+            subscriber.onNext(productPage);
+            subscriber.onComplete();
+            return null;
+        }).when(productPagePublisher).subscribe(any(org.reactivestreams.Subscriber.class));
+
+        when(branchTable.query(any(QueryConditional.class)))
+                .thenReturn(branchPagePublisher);
+        when(branchProductsByStockIndex.query(any(QueryEnhancedRequest.class)))
+                .thenReturn(productPagePublisher);
 
         StepVerifier.create(repository.findTopProductsByFranchise("1"))
                 .expectNextMatches(product -> product.getStock().equals(100))
@@ -396,19 +322,19 @@ class FranchiseDynamoDBTest {
 
     @Test
     void shouldReturnEmptyWhenNoTopProducts() {
-        Page<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy> page = mock(Page.class);
+        Page<BranchEntity> page = mock(Page.class);
         when(page.items()).thenReturn(Arrays.asList());
 
-        PagePublisher<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy> pagePublisher = mock(PagePublisher.class);
+        PagePublisher<BranchEntity> pagePublisher = mock(PagePublisher.class);
         doAnswer(invocation -> {
-            org.reactivestreams.Subscriber<Page<co.com.bancolombia.dynamodb.entity.ProductStockMaxEntitiy>> subscriber = invocation.getArgument(0);
+            org.reactivestreams.Subscriber<Page<BranchEntity>> subscriber = invocation.getArgument(0);
             subscriber.onSubscribe(mock(org.reactivestreams.Subscription.class));
             subscriber.onNext(page);
             subscriber.onComplete();
             return null;
         }).when(pagePublisher).subscribe(any(org.reactivestreams.Subscriber.class));
 
-        when(productStockMaxTable.query(any(QueryConditional.class)))
+        when(branchTable.query(any(QueryConditional.class)))
                 .thenReturn(pagePublisher);
 
         StepVerifier.create(repository.findTopProductsByFranchise("1"))
