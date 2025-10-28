@@ -1,6 +1,9 @@
 package co.com.bancolombia.api;
 
 import co.com.bancolombia.api.dto.*;
+import co.com.bancolombia.api.handler.BranchHandler;
+import co.com.bancolombia.api.handler.FranchiseHandler;
+import co.com.bancolombia.api.handler.ProductHandler;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -32,7 +35,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises",
           method = RequestMethod.POST,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPOSTCreateFranchise",
           operation = @Operation(
               operationId = "createFranchise",
@@ -45,7 +48,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/branches",
           method = RequestMethod.POST,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPOSTCreateBranch",
           operation = @Operation(
               operationId = "createBranch",
@@ -59,7 +62,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/branches/{branchId}/products",
           method = RequestMethod.POST,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPOSTCreateProduct",
           operation = @Operation(
               operationId = "createProduct",
@@ -76,7 +79,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/branches/{branchId}/products/{productId}",
           method = RequestMethod.DELETE,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenDELETEProduct",
           operation = @Operation(
               operationId = "deleteProduct",
@@ -93,7 +96,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/branches/{branchId}/products/{productId}/stock",
           method = RequestMethod.PATCH,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPATCHUpdateStock",
           operation = @Operation(
               operationId = "updateStock",
@@ -111,7 +114,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/top-products",
           method = RequestMethod.GET,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenGETTopProducts",
           operation = @Operation(
               operationId = "getTopProducts",
@@ -124,7 +127,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/name",
           method = RequestMethod.PATCH,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPATCHUpdateFranchiseName",
           operation = @Operation(
               operationId = "updateFranchiseName",
@@ -138,7 +141,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/branches/{branchId}/name",
           method = RequestMethod.PATCH,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPATCHUpdateBranchName",
           operation = @Operation(
               operationId = "updateBranchName",
@@ -155,7 +158,7 @@ public class RouterRest {
       @RouterOperation(
           path = "/api/v1/franchises/{franchiseId}/branches/{branchId}/products/{productId}/name",
           method = RequestMethod.PATCH,
-          beanClass = Handler.class,
+          beanClass = FranchiseHandler.class,
           beanMethod = "listenPATCHUpdateProductName",
           operation = @Operation(
               operationId = "updateProductName",
@@ -171,16 +174,18 @@ public class RouterRest {
           )
       )
   })
-  public RouterFunction<ServerResponse> routerFunction(Handler handler) {
+  public RouterFunction<ServerResponse> routerFunction(FranchiseHandler franchiseHandler,
+                                                       BranchHandler branchHandler,
+                                                       ProductHandler productHandler) {
     return nest(path("/api/v1/franchises"),
-        route(POST(""), handler::listenPOSTCreateFranchise)
-            .andRoute(POST("/{franchiseId}/branches"), handler::listenPOSTCreateBranch)
-            .andRoute(POST("/{franchiseId}/branches/{branchId}/products"), handler::listenPOSTCreateProduct)
-            .andRoute(DELETE("/{franchiseId}/branches/{branchId}/products/{productId}"), handler::listenDELETEProduct)
-            .andRoute(PATCH("/{franchiseId}/branches/{branchId}/products/{productId}/stock"), handler::listenPATCHUpdateStock)
-            .andRoute(GET("/{franchiseId}/top-products"), handler::listenGETTopProducts)
-            .andRoute(PATCH("/{franchiseId}/name"), handler::listenPATCHUpdateFranchiseName)
-            .andRoute(PATCH("/{franchiseId}/branches/{branchId}/name"), handler::listenPATCHUpdateBranchName)
-            .andRoute(PATCH("/{franchiseId}/branches/{branchId}/products/{productId}/name"), handler::listenPATCHUpdateProductName));
+        route(POST(""), franchiseHandler::listenPOSTCreateFranchise)
+            .andRoute(POST("/{franchiseId}/branches"), branchHandler::listenPOSTCreateBranch)
+            .andRoute(POST("/{franchiseId}/branches/{branchId}/products"), productHandler::listenPOSTCreateProduct)
+            .andRoute(DELETE("/{franchiseId}/branches/{branchId}/products/{productId}"), productHandler::listenDELETEProduct)
+            .andRoute(PATCH("/{franchiseId}/branches/{branchId}/products/{productId}/stock"), productHandler::listenPATCHUpdateStock)
+            .andRoute(GET("/{franchiseId}/top-products"), productHandler::listenGETTopProducts)
+            .andRoute(PATCH("/{franchiseId}/name"), franchiseHandler::listenPATCHUpdateFranchiseName)
+            .andRoute(PATCH("/{franchiseId}/branches/{branchId}/name"), branchHandler::listenPATCHUpdateBranchName)
+            .andRoute(PATCH("/{franchiseId}/branches/{branchId}/products/{productId}/name"), productHandler::listenPATCHUpdateProductName));
   }
 }

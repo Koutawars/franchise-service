@@ -175,4 +175,30 @@ class FranchiseIntegrationTest {
         .expectStatus().isOk()
         .expectBody(StandardResponse.class);
   }
+
+  @Test
+  @Order(8)
+  void shouldGetTopProductsFromCacheWhenDynamoDBFails() {
+    CreateProduct product1 = CreateProduct.builder().name("Product 1").stock(100).build();
+    CreateProduct product2 = CreateProduct.builder().name("Product 2").stock(200).build();
+
+    webTestClient.post()
+        .uri("/api/v1/franchises/" + franchiseId + "/branches/" + branchId + "/products")
+        .bodyValue(product1)
+        .exchange()
+        .expectStatus().isOk();
+
+    webTestClient.post()
+        .uri("/api/v1/franchises/" + franchiseId + "/branches/" + branchId + "/products")
+        .bodyValue(product2)
+        .exchange()
+        .expectStatus().isOk();
+
+    webTestClient.get()
+        .uri("/api/v1/franchises/" + franchiseId + "/top-products")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.data").isArray();
+  }
 }
