@@ -1,0 +1,9 @@
+package co.com.bancolombia.model.franchise.gateway;
+
+import co.com.bancolombia.model.franchise.Branch;
+import reactor.core.publisher.Mono;
+
+public interface BranchRepository {
+  Mono<Branch> save(Branch branch);
+  Mono<Branch> findById(String id, String franchiseId);
+}

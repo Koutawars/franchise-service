@@ -1,11 +1,16 @@
 package co.com.bancolombia.api;
 
 import co.com.bancolombia.api.dto.*;
+import co.com.bancolombia.api.handler.BranchHandler;
+import co.com.bancolombia.api.handler.FranchiseHandler;
+import co.com.bancolombia.api.handler.ProductHandler;
 import co.com.bancolombia.api.utils.RequestValidator;
 import co.com.bancolombia.model.franchise.Branch;
 import co.com.bancolombia.model.franchise.Franchise;
 import co.com.bancolombia.model.franchise.Product;
+import co.com.bancolombia.usecase.franchise.BranchUseCase;
 import co.com.bancolombia.usecase.franchise.FranchiseUseCase;
+import co.com.bancolombia.usecase.franchise.ProductUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -24,7 +29,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class, RouterRestTest.TestConfig.class})
+@ContextConfiguration(classes = {RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, RouterRestTest.TestConfig.class})
 @WebFluxTest
 class RouterRestTest {
 
@@ -35,10 +40,24 @@ class RouterRestTest {
   private FranchiseUseCase franchiseUseCase;
 
   @Autowired
+  private BranchUseCase branchUseCase;
+
+  @Autowired
+  private ProductUseCase productUseCase;
+
+  @Autowired
   private RequestValidator validator;
 
   @TestConfiguration
   static class TestConfig {
+    @Bean
+    public BranchUseCase branchUseCase() {
+      return mock(BranchUseCase.class);
+    }
+    @Bean
+    public ProductUseCase productUseCase() {
+      return mock(ProductUseCase.class);
+    }
     @Bean
     public FranchiseUseCase franchiseUseCase() {
       return mock(FranchiseUseCase.class);
@@ -73,7 +92,7 @@ class RouterRestTest {
     Branch branch = Branch.builder().id("1").name("Test Branch").franchiseId("franchise-1").build();
     
     when(validator.validate(any(CreateBranch.class))).thenReturn(Mono.just(request));
-    when(franchiseUseCase.addBranch(any(Branch.class))).thenReturn(Mono.just(branch));
+    when(branchUseCase.addBranch(any(Branch.class))).thenReturn(Mono.just(branch));
 
     webTestClient.post()
         .uri("/api/v1/franchises/franchise-1/branches")
@@ -90,7 +109,7 @@ class RouterRestTest {
     Product product = Product.builder().id("1").name("Test Product").stock(10).build();
     
     when(validator.validate(any(CreateProduct.class))).thenReturn(Mono.just(request));
-    when(franchiseUseCase.addProduct(any(Product.class))).thenReturn(Mono.just(product));
+    when(productUseCase.addProduct(any(Product.class))).thenReturn(Mono.just(product));
 
     webTestClient.post()
         .uri("/api/v1/franchises/franchise-1/branches/branch-1/products")
@@ -105,7 +124,7 @@ class RouterRestTest {
   void testDeleteProduct() {
     Product product = Product.builder().id("product-1").name("Test Product").build();
     
-    when(franchiseUseCase.deleteProduct(anyString(), anyString(), anyString()))
+    when(productUseCase.deleteProduct(anyString(), anyString(), anyString()))
         .thenReturn(Mono.just(product));
 
     webTestClient.delete()
@@ -121,7 +140,7 @@ class RouterRestTest {
     Product product = Product.builder().id("product-1").stock(20).build();
     
     when(validator.validate(any(UpdateStock.class))).thenReturn(Mono.just(request));
-    when(franchiseUseCase.modifyStock(anyString(), anyString(), anyString(), any(Integer.class)))
+    when(productUseCase.modifyStock(anyString(), anyString(), anyString(), any(Integer.class)))
         .thenReturn(Mono.just(product));
 
     webTestClient.patch()
@@ -137,7 +156,7 @@ class RouterRestTest {
   void testGetTopProducts() {
     Product product = Product.builder().id("product-1").name("Top Product").stock(100).build();
     
-    when(franchiseUseCase.getTopProductsPerBranch(anyString()))
+    when(productUseCase.getTopProductsPerBranch(anyString()))
         .thenReturn(Flux.fromIterable(List.of(product)));
 
     webTestClient.get()
@@ -171,7 +190,7 @@ class RouterRestTest {
     Branch branch = Branch.builder().id("branch-1").name("Updated Branch").build();
     
     when(validator.validate(any(UpdateName.class))).thenReturn(Mono.just(request));
-    when(franchiseUseCase.updateNameBranch(anyString(), anyString(), anyString()))
+    when(branchUseCase.updateNameBranch(anyString(), anyString(), anyString()))
         .thenReturn(Mono.just(branch));
 
     webTestClient.patch()
@@ -189,7 +208,7 @@ class RouterRestTest {
     Product product = Product.builder().id("product-1").name("Updated Product").build();
     
     when(validator.validate(any(UpdateName.class))).thenReturn(Mono.just(request));
-    when(franchiseUseCase.updateNameProduct(anyString(), anyString(), anyString(), anyString()))
+    when(productUseCase.updateNameProduct(anyString(), anyString(), anyString(), anyString()))
         .thenReturn(Mono.just(product));
 
     webTestClient.patch()
@@ -221,7 +240,7 @@ class RouterRestTest {
     CreateBranch request = CreateBranch.builder().name("Test Branch").build();
     
     when(validator.validate(any(CreateBranch.class))).thenReturn(Mono.just(request));
-    when(franchiseUseCase.addBranch(any(Branch.class)))
+    when(branchUseCase.addBranch(any(Branch.class)))
         .thenReturn(Mono.error(new RuntimeException("UseCase error")));
 
     webTestClient.post()
@@ -234,7 +253,7 @@ class RouterRestTest {
 
   @Test
   void testDeleteProductError() {
-    when(franchiseUseCase.deleteProduct(anyString(), anyString(), anyString()))
+    when(productUseCase.deleteProduct(anyString(), anyString(), anyString()))
         .thenReturn(Mono.error(new RuntimeException("Delete error")));
 
     webTestClient.delete()
