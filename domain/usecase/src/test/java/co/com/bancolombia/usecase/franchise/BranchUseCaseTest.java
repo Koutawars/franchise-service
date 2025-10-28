@@ -1,6 +1,7 @@
 package co.com.bancolombia.usecase.franchise;
 
 import co.com.bancolombia.model.exceptions.FranchiseNotFoundException;
+import co.com.bancolombia.model.franchise.Branch;
 import co.com.bancolombia.model.franchise.Franchise;
 import co.com.bancolombia.model.franchise.gateway.BranchRepository;
 import co.com.bancolombia.model.franchise.gateway.FranchiseRepository;
@@ -21,10 +22,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FranchiseUseCaseTest {
+public class BranchUseCaseTest {
 
   @Mock
   private FranchiseRepository franchiseRepository;
+
+  @Mock
+  private ProductRepository productRepository;
 
   @Mock
   private BranchRepository branchRepository;
@@ -35,58 +39,73 @@ class FranchiseUseCaseTest {
   @Mock
   private LogBuilder logBuilder;
 
-  private FranchiseUseCase franchiseUseCase;
+  private BranchUseCase branchUseCase;
 
   private Franchise franchise;
+  private Branch branch;
 
   @BeforeEach
   void setUp() {
-    franchiseUseCase = new FranchiseUseCase(franchiseRepository, logger);
+    branchUseCase = new BranchUseCase(branchRepository, franchiseRepository, logger);
 
     franchise = Franchise.builder()
         .id("franchise-1")
         .name("Test Franchise")
         .build();
 
+    branch = Branch.builder()
+        .id("branch-1")
+        .name("Test Branch")
+        .franchiseId("franchise-1")
+        .build();
+
     when(logger.with(any(Context.class))).thenReturn(logBuilder);
     when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
   }
 
-  @Test
-  void addFranchise_Success() {
-    when(franchiseRepository.save(franchise)).thenReturn(Mono.just(franchise));
-
-    StepVerifier.create(franchiseUseCase.addFranchise(franchise))
-        .expectNext(franchise)
-        .verifyComplete();
-  }
-
-
 
   @Test
-  void updateNameFranchise_Success() {
-    Franchise updatedFranchise = Franchise.builder()
-        .id("franchise-1")
-        .name("Updated Name")
-        .build();
-
+  void addBranch_Success() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(franchiseRepository.save(any(Franchise.class))).thenReturn(Mono.just(updatedFranchise));
+    when(branchRepository.saveBranch(branch)).thenReturn(Mono.just(branch));
 
-    StepVerifier.create(franchiseUseCase.updateNameFranchise("franchise-1", "Updated Name"))
-        .expectNext(updatedFranchise)
+    StepVerifier.create(branchUseCase.addBranch(branch))
+        .expectNext(branch)
         .verifyComplete();
   }
 
-
-
   @Test
-  void updateNameFranchise_FranchiseNotFound() {
+  void addBranch_FranchiseNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.empty());
+    when(branchRepository.saveBranch(branch)).thenReturn(Mono.just(branch));
 
-    StepVerifier.create(franchiseUseCase.updateNameFranchise("franchise-1", "Updated Name"))
+    StepVerifier.create(branchUseCase.addBranch(branch))
         .expectError(FranchiseNotFoundException.class)
         .verify();
   }
+  @Test
+  void updateNameBranch_Success() {
+    Branch updatedBranch = Branch.builder()
+        .id("branch-1")
+        .name("Updated Branch")
+        .franchiseId("franchise-1")
+        .build();
 
+    when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
+    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(branchRepository.saveBranch(any(Branch.class))).thenReturn(Mono.just(updatedBranch));
+
+    StepVerifier.create(branchUseCase.updateNameBranch("branch-1", "franchise-1", "Updated Branch"))
+        .expectNext(updatedBranch)
+        .verifyComplete();
+  }
+
+  @Test
+  void updateNameBranch_FranchiseNotFound() {
+    when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.empty());
+
+    StepVerifier.create(branchUseCase.updateNameBranch("branch-1", "franchise-1", "Updated Branch"))
+        .expectError(FranchiseNotFoundException.class)
+        .verify();
+  }
 }

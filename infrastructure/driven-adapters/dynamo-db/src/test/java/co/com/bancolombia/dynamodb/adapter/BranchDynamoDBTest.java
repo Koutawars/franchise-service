@@ -1,7 +1,7 @@
 package co.com.bancolombia.dynamodb.adapter;
 
-import co.com.bancolombia.dynamodb.entity.FranchiseEntity;
-import co.com.bancolombia.model.franchise.Franchise;
+import co.com.bancolombia.dynamodb.entity.BranchEntity;
+import co.com.bancolombia.model.franchise.Branch;
 import co.com.bancolombia.model.utils.LogBuilder;
 import co.com.bancolombia.model.utils.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,85 +12,83 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 import software.amazon.awssdk.enhanced.dynamodb.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.*;
 
-import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FranchiseDynamoDBTest {
-
+public class BranchDynamoDBTest {
   @Mock
   private DynamoDbEnhancedAsyncClient connectionFactory;
   @Mock
-  private DynamoDbAsyncTable<FranchiseEntity> franchiseTable;
+  private DynamoDbAsyncTable<BranchEntity> branchTable;
   @Mock
   private Logger logger;
   @Mock
   private LogBuilder logBuilder;
 
-  private FranchiseDynamoDB franchiseDynamoDB;
+  private BranchDynamoDB branchDynamoDB;
   private final String tableName = "test-table";
 
   @BeforeEach
   void setUp() {
-    when(connectionFactory.table(tableName, TableSchema.fromBean(FranchiseEntity.class)))
-        .thenReturn(franchiseTable);
+    when(connectionFactory.table(tableName, TableSchema.fromBean(BranchEntity.class)))
+        .thenReturn(branchTable);
 
     when(logger.with(any(Context.class))).thenReturn(logBuilder);
     when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
     doNothing().when(logBuilder).info(anyString());
 
-    franchiseDynamoDB = new FranchiseDynamoDB(tableName, connectionFactory, logger);
+    branchDynamoDB = new BranchDynamoDB(tableName, connectionFactory, logger);
   }
 
   @Test
-  void shouldSaveFranchise() {
-    Franchise franchise = Franchise.builder()
+  void shouldSaveBranch() {
+    Branch branch = Branch.builder()
         .id("1")
-        .name("Test Franchise")
+        .name("Test Branch")
+        .franchiseId("1")
         .build();
 
-    when(franchiseTable.putItem(any(FranchiseEntity.class)))
+    when(branchTable.putItem(any(BranchEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(franchiseDynamoDB.save(franchise))
+    StepVerifier.create(branchDynamoDB.saveBranch(branch))
         .expectNextMatches(result ->
             result.getId().equals("1") &&
-                result.getName().equals("Test Franchise"))
+                result.getName().equals("Test Branch") &&
+                result.getFranchiseId().equals("1"))
         .verifyComplete();
   }
 
   @Test
-  void shouldFindFranchiseById() {
-    FranchiseEntity entity = FranchiseEntity.builder()
+  void shouldFindBranchById() {
+    BranchEntity entity = BranchEntity.builder()
         .pk("FRANCHISE#1")
-        .sk("METADATA")
-        .name("Test Franchise")
+        .sk("BRANCH#1")
+        .name("Test Branch")
         .build();
 
-    when(franchiseTable.getItem(any(FranchiseEntity.class)))
+    when(branchTable.getItem(any(Key.class)))
         .thenReturn(CompletableFuture.completedFuture(entity));
 
-    StepVerifier.create(franchiseDynamoDB.findById("1"))
-        .expectNextMatches(franchise ->
-            franchise.getId().equals("1") &&
-                franchise.getName().equals("Test Franchise"))
+    StepVerifier.create(branchDynamoDB.findBranchById("1", "1"))
+        .expectNextMatches(branch ->
+            branch.getId().equals("1") &&
+                branch.getName().equals("Test Branch"))
         .verifyComplete();
   }
 
   @Test
-  void shouldReturnEmptyWhenFranchiseNotFound() {
-    when(franchiseTable.getItem(any(FranchiseEntity.class)))
+  void shouldReturnEmptyWhenBranchNotFound() {
+    when(branchTable.getItem(any(Key.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(franchiseDynamoDB.findById("1"))
+    StepVerifier.create(branchDynamoDB.findBranchById("1", "1"))
         .verifyComplete();
   }
-
-
 }
