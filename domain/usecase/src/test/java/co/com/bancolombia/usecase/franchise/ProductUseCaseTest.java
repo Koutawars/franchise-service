@@ -81,8 +81,8 @@ class ProductUseCaseTest {
   @Test
   void addProduct_Success() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.saveProduct(product)).thenReturn(Mono.just(product));
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.save(product)).thenReturn(Mono.just(product));
 
     StepVerifier.create(productUseCase.addProduct(product))
         .expectNext(product)
@@ -92,8 +92,8 @@ class ProductUseCaseTest {
   @Test
   void addProduct_FranchiseNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.empty());
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.saveProduct(product)).thenReturn(Mono.just(product));
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.save(product)).thenReturn(Mono.just(product));
 
     StepVerifier.create(productUseCase.addProduct(product))
         .expectError(FranchiseNotFoundException.class)
@@ -103,8 +103,8 @@ class ProductUseCaseTest {
   @Test
   void addProduct_BranchNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.empty());
-    when(productRepository.saveProduct(product)).thenReturn(Mono.just(product));
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.empty());
+    when(productRepository.save(product)).thenReturn(Mono.just(product));
 
     StepVerifier.create(productUseCase.addProduct(product))
         .expectError(BranchNotFoundException.class)
@@ -114,9 +114,9 @@ class ProductUseCaseTest {
   @Test
   void deleteProduct_Success() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.findProductById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.just(product));
-    when(productRepository.deleteProduct(product)).thenReturn(Mono.empty());
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.findById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.just(product));
+    when(productRepository.delete(product)).thenReturn(Mono.empty());
 
     StepVerifier.create(productUseCase.deleteProduct("product-1", "branch-1", "franchise-1"))
         .expectNext(product)
@@ -126,8 +126,8 @@ class ProductUseCaseTest {
   @Test
   void deleteProduct_ProductNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.findProductById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.empty());
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.findById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.empty());
 
     StepVerifier.create(productUseCase.deleteProduct("product-1", "branch-1", "franchise-1"))
         .expectError(ProductNotFoundException.class)
@@ -145,9 +145,9 @@ class ProductUseCaseTest {
         .build();
 
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.findProductById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.just(product));
-    when(productRepository.saveProduct(any(Product.class))).thenReturn(Mono.just(updatedProduct));
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.findById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.just(product));
+    when(productRepository.save(any(Product.class))).thenReturn(Mono.just(updatedProduct));
 
     StepVerifier.create(productUseCase.modifyStock("product-1", "branch-1", "franchise-1", 20))
         .expectNext(updatedProduct)
@@ -170,12 +170,34 @@ class ProductUseCaseTest {
   }
 
   @Test
-  void getTopProductsPerBranch_FranchiseNotFound() {
+  void getTopProductsPerBranch_FranchiseNotFoundButCacheAvailable() {
+    Product product1 = Product.builder().id("p1").stock(20).branchId("branch-1").build();
+    
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.empty());
+    when(productRepository.findTopProductsByFranchise("franchise-1"))
+        .thenReturn(Flux.just(product1));
 
     StepVerifier.create(productUseCase.getTopProductsPerBranch("franchise-1"))
-        .expectError(FranchiseNotFoundException.class)
-        .verify();
+        .expectNext(product1)
+        .verifyComplete();
+    
+    verify(productRepository, times(2)).findTopProductsByFranchise("franchise-1");
+  }
+
+  @Test
+  void getTopProductsPerBranch_FranchiseErrorButCacheAvailable() {
+    Product product1 = Product.builder().id("p1").stock(20).branchId("branch-1").build();
+    
+    when(franchiseRepository.findById("franchise-1"))
+        .thenReturn(Mono.error(new RuntimeException("DynamoDB error")));
+    when(productRepository.findTopProductsByFranchise("franchise-1"))
+        .thenReturn(Flux.just(product1));
+
+    StepVerifier.create(productUseCase.getTopProductsPerBranch("franchise-1"))
+        .expectNext(product1)
+        .verifyComplete();
+    
+    verify(productRepository, times(2)).findTopProductsByFranchise("franchise-1");
   }
 
   @Test
@@ -189,9 +211,9 @@ class ProductUseCaseTest {
         .build();
 
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.findProductById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.just(product));
-    when(productRepository.saveProduct(any(Product.class))).thenReturn(Mono.just(updatedProduct));
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.findById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.just(product));
+    when(productRepository.save(any(Product.class))).thenReturn(Mono.just(updatedProduct));
 
     StepVerifier.create(productUseCase.updateNameProduct("product-1", "branch-1", "franchise-1", "Updated Product"))
         .expectNext(updatedProduct)
@@ -200,8 +222,8 @@ class ProductUseCaseTest {
   @Test
   void modifyStock_ProductNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(productRepository.findProductById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.empty());
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(productRepository.findById("product-1", "branch-1", "franchise-1")).thenReturn(Mono.empty());
 
     StepVerifier.create(productUseCase.modifyStock("product-1", "branch-1", "franchise-1", 20))
         .expectError(ProductNotFoundException.class)
@@ -220,7 +242,7 @@ class ProductUseCaseTest {
   @Test
   void modifyStock_BranchNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.empty());
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.empty());
 
     StepVerifier.create(productUseCase.modifyStock("product-1", "branch-1", "franchise-1", 20))
         .expectError(BranchNotFoundException.class)

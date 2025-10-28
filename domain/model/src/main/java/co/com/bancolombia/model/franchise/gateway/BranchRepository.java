@@ -4,6 +4,6 @@ import co.com.bancolombia.model.franchise.Branch;
 import reactor.core.publisher.Mono;
 
 public interface BranchRepository {
-  Mono<Branch> saveBranch(Branch branch);
-  Mono<Branch> findBranchById(String id, String franchiseId);
+  Mono<Branch> save(Branch branch);
+  Mono<Branch> findById(String id, String franchiseId);
 }

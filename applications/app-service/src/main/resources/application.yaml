@@ -31,6 +31,29 @@ management:
     health:
       probes:
         enabled: true
+resilience4j:
+  circuitbreaker:
+    instances:
+      dynamoFindTopProductsByFranchise:
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
+      dynamoFindFranchise:
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.net.ConnectException
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 aws:

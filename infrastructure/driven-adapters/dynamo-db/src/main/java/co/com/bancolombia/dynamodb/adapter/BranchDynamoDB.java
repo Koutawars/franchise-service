@@ -36,7 +36,7 @@ public class BranchDynamoDB implements BranchRepository {
   }
 
   @Override
-  public Mono<Branch> saveBranch(Branch branch) {
+  public Mono<Branch> save(Branch branch) {
     BranchEntity branchEntity = BranchMapper.toEntity(branch);
     return Mono.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
@@ -52,7 +52,7 @@ public class BranchDynamoDB implements BranchRepository {
 
 
   @Override
-  public Mono<Branch> findBranchById(String id, String franchiseId) {
+  public Mono<Branch> findById(String id, String franchiseId) {
     return Mono.deferContextual(ctx -> {
       Key key = Key.builder()
           .partitionValue(FRANCHISE + franchiseId)

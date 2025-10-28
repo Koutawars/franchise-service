@@ -25,7 +25,7 @@ public class BranchUseCase {
 
       return franchiseRepository.findById(branch.getFranchiseId())
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .then(branchRepository.saveBranch(branch))
+          .then(branchRepository.save(branch))
           .doOnSubscribe(unused -> logBuilder.info("Adding branch"))
           .doOnSuccess(unused -> logBuilder.info("Branch added"))
           .doOnError(error -> logBuilder.error("Error adding branch"));
@@ -40,11 +40,11 @@ public class BranchUseCase {
 
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .flatMap(franchise -> branchRepository.findBranchById(branchId, franchiseId))
+          .flatMap(franchise -> branchRepository.findById(branchId, franchiseId))
           .switchIfEmpty(Mono.error(new BranchNotFoundException()))
           .flatMap(branch -> {
             branch.setName(name);
-            return branchRepository.saveBranch(branch);
+            return branchRepository.save(branch);
           })
           .doOnSubscribe(unused -> logBuilder.info("Updating branch name"))
           .doOnSuccess(unused -> logBuilder.info("Branch name updated"))

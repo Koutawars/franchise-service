@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class FranchiseDynamoDBTest {
@@ -32,6 +33,8 @@ class FranchiseDynamoDBTest {
   private Logger logger;
   @Mock
   private LogBuilder logBuilder;
+  @Mock
+  private co.com.bancolombia.dynamodb.cache.FranchiseCache franchiseCache;
 
   private FranchiseDynamoDB franchiseDynamoDB;
   private final String tableName = "test-table";
@@ -41,11 +44,12 @@ class FranchiseDynamoDBTest {
     when(connectionFactory.table(tableName, TableSchema.fromBean(FranchiseEntity.class)))
         .thenReturn(franchiseTable);
 
-    when(logger.with(any(Context.class))).thenReturn(logBuilder);
-    when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
-    doNothing().when(logBuilder).info(anyString());
+    lenient().when(logger.with(any(Context.class))).thenReturn(logBuilder);
+    lenient().when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
+    lenient().doNothing().when(logBuilder).info(anyString());
+    lenient().doNothing().when(logBuilder).error(anyString(), any(Throwable.class));
 
-    franchiseDynamoDB = new FranchiseDynamoDB(tableName, connectionFactory, logger);
+    franchiseDynamoDB = new FranchiseDynamoDB(tableName, connectionFactory, logger, franchiseCache);
   }
 
   @Test
@@ -92,5 +96,25 @@ class FranchiseDynamoDBTest {
         .verifyComplete();
   }
 
+  @Test
+  void shouldReturnCachedFranchiseOnFallback() {
+    Franchise franchise = Franchise.builder()
+        .id("1")
+        .name("Cached Franchise")
+        .build();
 
+    when(franchiseCache.get("1")).thenReturn(franchise);
+
+    StepVerifier.create(franchiseDynamoDB.fallbackFindById("1", new RuntimeException("DynamoDB error")))
+        .expectNextMatches(f -> f.getId().equals("1") && f.getName().equals("Cached Franchise"))
+        .verifyComplete();
+  }
+
+  @Test
+  void shouldReturnEmptyOnFallbackWhenNoCacheAvailable() {
+    when(franchiseCache.get("1")).thenReturn(null);
+
+    StepVerifier.create(franchiseDynamoDB.fallbackFindById("1", new RuntimeException("DynamoDB error")))
+        .verifyComplete();
+  }
 }

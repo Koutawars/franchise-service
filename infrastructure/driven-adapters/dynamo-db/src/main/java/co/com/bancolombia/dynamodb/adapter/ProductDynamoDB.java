@@ -1,5 +1,6 @@
 package co.com.bancolombia.dynamodb.adapter;
 
+import co.com.bancolombia.dynamodb.cache.ProductCache;
 import co.com.bancolombia.dynamodb.entity.BranchEntity;
 import co.com.bancolombia.dynamodb.entity.ProductEntity;
 import co.com.bancolombia.dynamodb.mapper.ProductMapper;
@@ -7,6 +8,7 @@ import co.com.bancolombia.model.franchise.Product;
 import co.com.bancolombia.model.franchise.gateway.ProductRepository;
 import co.com.bancolombia.model.utils.LogBuilder;
 import co.com.bancolombia.model.utils.Logger;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -15,6 +17,7 @@ import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
+import java.util.List;
 import java.util.Objects;
 
 @Repository
@@ -28,19 +31,21 @@ public class ProductDynamoDB implements ProductRepository {
   private final DynamoDbAsyncTable<BranchEntity> branchTable;
   private final String tableName;
   private final Logger logger;
+  private final ProductCache productCache;
 
   public ProductDynamoDB(@Value("${aws.dynamodb.franchiseTable}") String tableName,
                            DynamoDbEnhancedAsyncClient connectionFactory,
-                           Logger logger) {
+                           Logger logger, ProductCache productCache) {
     this.tableName = tableName;
     this.productTable = connectionFactory.table(tableName, TableSchema.fromBean(ProductEntity.class));
     this.branchTable = connectionFactory.table(tableName, TableSchema.fromBean(BranchEntity.class));
     this.branchProductsByStockIndex = productTable.index("BranchProductsByStock");
     this.logger = logger;
+    this.productCache = productCache;
   }
 
   @Override
-  public Mono<Product> saveProduct(Product product) {
+  public Mono<Product> save(Product product) {
     return Mono.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
           .key(TABLE_NAME_STRING, tableName)
@@ -48,7 +53,7 @@ public class ProductDynamoDB implements ProductRepository {
       logBuilder.info("save product");
 
       Mono<Product> existingProductMono = product.getId() != null
-          ? findProductById(product.getId(), product.getBranchId(), product.getFranchiseId())
+          ? findById(product.getId(), product.getBranchId(), product.getFranchiseId())
           : Mono.empty();
 
       return existingProductMono
@@ -68,7 +73,7 @@ public class ProductDynamoDB implements ProductRepository {
   }
 
   @Override
-  public Mono<Product> findProductById(String id, String branchId, String franchiseId) {
+  public Mono<Product> findById(String id, String branchId, String franchiseId) {
     return Mono.deferContextual(ctx -> {
       Key key = Key.builder()
           .partitionValue(FRANCHISE + franchiseId)
@@ -88,7 +93,7 @@ public class ProductDynamoDB implements ProductRepository {
   }
 
   @Override
-  public Mono<Void> deleteProduct(Product product) {
+  public Mono<Void> delete(Product product) {
     ProductEntity productEntity = ProductMapper.toEntity(product);
     return Mono.deferContextual(ctx -> {
       LogBuilder logBuilder = logger.with(ctx)
@@ -102,6 +107,7 @@ public class ProductDynamoDB implements ProductRepository {
     });
   }
 
+  @CircuitBreaker(name = "dynamoFindTopProductsByFranchise", fallbackMethod = "fallbackTop")
   @Override
   public Flux<Product> findTopProductsByFranchise(String franchiseId) {
     return Flux.deferContextual(ctx -> {
@@ -127,8 +133,26 @@ public class ProductDynamoDB implements ProductRepository {
                 .next()
                 .map(ProductMapper::toDomain);
           })
+          .collectList()
+          .doOnNext(list -> productCache.putTop(franchiseId, list))
+          .flatMapMany(Flux::fromIterable)
           .doOnComplete(() -> logBuilder.info("top products by franchise retrieved"))
           .doOnError(error -> logBuilder.error("Error getting top products by franchise", error));
+    });
+  }
+
+  public Flux<Product> fallbackTop(String franchiseId, Throwable ex) {
+    return Flux.deferContextual(ctx -> {
+      List<Product> cached = productCache.getTop(franchiseId);
+      LogBuilder logBuilder = logger.with(ctx)
+          .key(TABLE_NAME_STRING, tableName)
+          .key("franchiseId", franchiseId);
+      if (cached != null && !cached.isEmpty()) {
+        logBuilder.info("Returning cached products");
+        return Flux.fromIterable(cached);
+      }
+      logBuilder.error("No cache available for franchiseId, returning empty", ex);
+      return Flux.empty();
     });
   }
 

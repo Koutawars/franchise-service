@@ -1,7 +1,7 @@
 package co.com.bancolombia.dynamodb.adapter;
 
+import co.com.bancolombia.dynamodb.cache.ProductCache;
 import co.com.bancolombia.dynamodb.entity.BranchEntity;
-import co.com.bancolombia.dynamodb.entity.FranchiseEntity;
 import co.com.bancolombia.dynamodb.entity.ProductEntity;
 import co.com.bancolombia.model.franchise.Product;
 import co.com.bancolombia.model.utils.LogBuilder;
@@ -20,12 +20,14 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 public class ProductDynamoDBTest {
@@ -41,6 +43,8 @@ public class ProductDynamoDBTest {
   private Logger logger;
   @Mock
   private LogBuilder logBuilder;
+  @Mock
+  private ProductCache productCache;
 
   private ProductDynamoDB productDynamoDB;
   private final String tableName = "test-table";
@@ -54,16 +58,17 @@ public class ProductDynamoDBTest {
     when(productTable.index("BranchProductsByStock"))
         .thenReturn(branchProductsByStockIndex);
 
-    when(logger.with(any(Context.class))).thenReturn(logBuilder);
-    when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
-    doNothing().when(logBuilder).info(anyString());
+    lenient().when(logger.with(any(Context.class))).thenReturn(logBuilder);
+    lenient().when(logBuilder.key(anyString(), any())).thenReturn(logBuilder);
+    lenient().doNothing().when(logBuilder).info(anyString());
+    lenient().doNothing().when(logBuilder).error(anyString(), any(Throwable.class));
 
-    productDynamoDB = new ProductDynamoDB(tableName, connectionFactory, logger);
+    productDynamoDB = new ProductDynamoDB(tableName, connectionFactory, logger, productCache);
   }
 
 
   @Test
-  void shouldSaveProduct() {
+  void shouldSave() {
     Product product = Product.builder()
         .name("Test Product")
         .stock(10)
@@ -74,7 +79,7 @@ public class ProductDynamoDBTest {
     when(productTable.putItem(any(ProductEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(productDynamoDB.saveProduct(product))
+    StepVerifier.create(productDynamoDB.save(product))
         .expectNextMatches(result ->
             result.getName().equals("Test Product") &&
                 result.getStock().equals(10) &&
@@ -84,7 +89,7 @@ public class ProductDynamoDBTest {
   }
 
   @Test
-  void shouldFindProductById() {
+  void shouldFindById() {
     ProductEntity entity = ProductEntity.builder()
         .pk("FRANCHISE#1")
         .sk("BRANCH#1#PRODUCT#1")
@@ -95,7 +100,7 @@ public class ProductDynamoDBTest {
     when(productTable.getItem(any(Key.class)))
         .thenReturn(CompletableFuture.completedFuture(entity));
 
-    StepVerifier.create(productDynamoDB.findProductById("1", "1", "1"))
+    StepVerifier.create(productDynamoDB.findById("1", "1", "1"))
         .expectNextMatches(product ->
             product.getId().equals("1") &&
                 product.getName().equals("Test Product") &&
@@ -116,7 +121,7 @@ public class ProductDynamoDBTest {
     when(productTable.deleteItem(any(ProductEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(productDynamoDB.deleteProduct(product))
+    StepVerifier.create(productDynamoDB.delete(product))
         .verifyComplete();
   }
 
@@ -126,7 +131,7 @@ public class ProductDynamoDBTest {
     when(productTable.getItem(any(Key.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(productDynamoDB.findProductById("1", "1", "1"))
+    StepVerifier.create(productDynamoDB.findById("1", "1", "1"))
         .verifyComplete();
   }
 
@@ -163,7 +168,7 @@ public class ProductDynamoDBTest {
     when(productTable.putItem(any(ProductEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(productDynamoDB.saveProduct(updatedProduct))
+    StepVerifier.create(productDynamoDB.save(updatedProduct))
         .expectNextMatches(result -> result.getStock().equals(100))
         .verifyComplete();
 
@@ -242,5 +247,47 @@ public class ProductDynamoDBTest {
 
     StepVerifier.create(productDynamoDB.findTopProductsByFranchise("1"))
         .verifyComplete();
+  }
+
+  @Test
+  void shouldReturnCachedProductsOnFallback() {
+    Product cachedProduct = Product.builder()
+        .id("1")
+        .name("Cached Product")
+        .stock(50)
+        .franchiseId("1")
+        .branchId("1")
+        .build();
+
+    when(productCache.getTop("1")).thenReturn(List.of(cachedProduct));
+
+    StepVerifier.create(productDynamoDB.fallbackTop("1", new RuntimeException("DynamoDB error")))
+        .expectNextMatches(product ->
+            product.getId().equals("1") &&
+                product.getName().equals("Cached Product") &&
+                product.getStock().equals(50))
+        .verifyComplete();
+
+    verify(productCache, times(1)).getTop("1");
+  }
+
+  @Test
+  void shouldReturnEmptyOnFallbackWhenNoCacheAvailable() {
+    when(productCache.getTop("1")).thenReturn(null);
+
+    StepVerifier.create(productDynamoDB.fallbackTop("1", new RuntimeException("DynamoDB error")))
+        .verifyComplete();
+
+    verify(productCache, times(1)).getTop("1");
+  }
+
+  @Test
+  void shouldReturnEmptyOnFallbackWhenCacheIsEmpty() {
+    when(productCache.getTop("1")).thenReturn(List.of());
+
+    StepVerifier.create(productDynamoDB.fallbackTop("1", new RuntimeException("DynamoDB error")))
+        .verifyComplete();
+
+    verify(productCache, times(1)).getTop("1");
   }
 }

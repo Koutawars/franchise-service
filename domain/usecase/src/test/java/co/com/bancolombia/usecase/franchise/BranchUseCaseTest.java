@@ -67,7 +67,7 @@ public class BranchUseCaseTest {
   @Test
   void addBranch_Success() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.saveBranch(branch)).thenReturn(Mono.just(branch));
+    when(branchRepository.save(branch)).thenReturn(Mono.just(branch));
 
     StepVerifier.create(branchUseCase.addBranch(branch))
         .expectNext(branch)
@@ -77,7 +77,7 @@ public class BranchUseCaseTest {
   @Test
   void addBranch_FranchiseNotFound() {
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.empty());
-    when(branchRepository.saveBranch(branch)).thenReturn(Mono.just(branch));
+    when(branchRepository.save(branch)).thenReturn(Mono.just(branch));
 
     StepVerifier.create(branchUseCase.addBranch(branch))
         .expectError(FranchiseNotFoundException.class)
@@ -92,8 +92,8 @@ public class BranchUseCaseTest {
         .build();
 
     when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.just(franchise));
-    when(branchRepository.findBranchById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
-    when(branchRepository.saveBranch(any(Branch.class))).thenReturn(Mono.just(updatedBranch));
+    when(branchRepository.findById("branch-1", "franchise-1")).thenReturn(Mono.just(branch));
+    when(branchRepository.save(any(Branch.class))).thenReturn(Mono.just(updatedBranch));
 
     StepVerifier.create(branchUseCase.updateNameBranch("branch-1", "franchise-1", "Updated Branch"))
         .expectNext(updatedBranch)

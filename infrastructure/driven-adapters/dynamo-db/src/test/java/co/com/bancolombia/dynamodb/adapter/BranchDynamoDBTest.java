@@ -57,7 +57,7 @@ public class BranchDynamoDBTest {
     when(branchTable.putItem(any(BranchEntity.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(branchDynamoDB.saveBranch(branch))
+    StepVerifier.create(branchDynamoDB.save(branch))
         .expectNextMatches(result ->
             result.getId().equals("1") &&
                 result.getName().equals("Test Branch") &&
@@ -66,7 +66,7 @@ public class BranchDynamoDBTest {
   }
 
   @Test
-  void shouldFindBranchById() {
+  void shouldFindById() {
     BranchEntity entity = BranchEntity.builder()
         .pk("FRANCHISE#1")
         .sk("BRANCH#1")
@@ -76,7 +76,7 @@ public class BranchDynamoDBTest {
     when(branchTable.getItem(any(Key.class)))
         .thenReturn(CompletableFuture.completedFuture(entity));
 
-    StepVerifier.create(branchDynamoDB.findBranchById("1", "1"))
+    StepVerifier.create(branchDynamoDB.findById("1", "1"))
         .expectNextMatches(branch ->
             branch.getId().equals("1") &&
                 branch.getName().equals("Test Branch"))
@@ -88,7 +88,7 @@ public class BranchDynamoDBTest {
     when(branchTable.getItem(any(Key.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    StepVerifier.create(branchDynamoDB.findBranchById("1", "1"))
+    StepVerifier.create(branchDynamoDB.findById("1", "1"))
         .verifyComplete();
   }
 }

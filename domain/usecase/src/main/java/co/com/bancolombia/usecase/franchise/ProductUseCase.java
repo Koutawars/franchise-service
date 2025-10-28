@@ -31,9 +31,9 @@ public class ProductUseCase {
 
       return franchiseRepository.findById(product.getFranchiseId())
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .then(branchRepository.findBranchById(product.getBranchId(), product.getFranchiseId()))
+          .then(branchRepository.findById(product.getBranchId(), product.getFranchiseId()))
           .switchIfEmpty(Mono.error(new BranchNotFoundException()))
-          .then(productRepository.saveProduct(product))
+          .then(productRepository.save(product))
           .doOnSubscribe(unused -> logBuilder.info("Adding product"))
           .doOnSuccess(unused -> logBuilder.info("Product added"))
           .doOnError(error -> logBuilder.error("Error adding product"));
@@ -49,11 +49,11 @@ public class ProductUseCase {
 
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .then(branchRepository.findBranchById(branchId, franchiseId))
+          .then(branchRepository.findById(branchId, franchiseId))
           .switchIfEmpty(Mono.error(new BranchNotFoundException()))
-          .then(productRepository.findProductById(productId, branchId, franchiseId))
+          .then(productRepository.findById(productId, branchId, franchiseId))
           .switchIfEmpty(Mono.error(new ProductNotFoundException()))
-          .flatMap(product -> productRepository.deleteProduct(product)
+          .flatMap(product -> productRepository.delete(product)
               .then(Mono.just(product)))
           .doOnSubscribe(unused -> logBuilder.info("Deleting product"))
           .doOnSuccess(unused -> logBuilder.info("Product deleted"))
@@ -72,13 +72,13 @@ public class ProductUseCase {
 
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .flatMap(franchise -> branchRepository.findBranchById(branchId, franchiseId))
+          .flatMap(franchise -> branchRepository.findById(branchId, franchiseId))
           .switchIfEmpty(Mono.error(new BranchNotFoundException()))
-          .flatMap(branch -> productRepository.findProductById(productId, branchId, franchiseId))
+          .flatMap(branch -> productRepository.findById(productId, branchId, franchiseId))
           .switchIfEmpty(Mono.error(new ProductNotFoundException()))
           .flatMap(product -> {
             product.setStock(stock);
-            return productRepository.saveProduct(product);
+            return productRepository.save(product);
           })
           .doOnSubscribe(unused -> logBuilder.info("Modifying product stock"))
           .doOnSuccess(unused -> logBuilder.info("Product stock modified"))
@@ -110,13 +110,13 @@ public class ProductUseCase {
           .key("name", name);
       return franchiseRepository.findById(franchiseId)
           .switchIfEmpty(Mono.error(new FranchiseNotFoundException()))
-          .then(branchRepository.findBranchById(branchId, franchiseId))
+          .then(branchRepository.findById(branchId, franchiseId))
           .switchIfEmpty(Mono.error(new BranchNotFoundException()))
-          .then(productRepository.findProductById(productId, branchId, franchiseId))
+          .then(productRepository.findById(productId, branchId, franchiseId))
           .switchIfEmpty(Mono.error(new ProductNotFoundException()))
           .flatMap(product -> {
             product.setName(name);
-            return productRepository.saveProduct(product);
+            return productRepository.save(product);
           })
           .doOnSubscribe(unused -> logBuilder.info("Updating branch name"))
           .doOnSuccess(unused -> logBuilder.info("Product name updated"))

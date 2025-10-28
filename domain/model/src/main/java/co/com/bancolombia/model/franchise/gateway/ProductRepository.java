@@ -5,8 +5,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ProductRepository {
-  Mono<Product> saveProduct(Product product);
-  Mono<Product> findProductById(String id, String branchId, String franchiseId);
-  Mono<Void> deleteProduct(Product product);
+  Mono<Product> save(Product product);
+  Mono<Product> findById(String id, String branchId, String franchiseId);
+  Mono<Void> delete(Product product);
   Flux<Product> findTopProductsByFranchise(String franchiseId);
 }
