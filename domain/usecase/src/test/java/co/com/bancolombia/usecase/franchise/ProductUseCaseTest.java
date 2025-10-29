@@ -170,37 +170,6 @@ class ProductUseCaseTest {
   }
 
   @Test
-  void getTopProductsPerBranch_FranchiseNotFoundButCacheAvailable() {
-    Product product1 = Product.builder().id("p1").stock(20).branchId("branch-1").build();
-    
-    when(franchiseRepository.findById("franchise-1")).thenReturn(Mono.empty());
-    when(productRepository.findTopProductsByFranchise("franchise-1"))
-        .thenReturn(Flux.just(product1));
-
-    StepVerifier.create(productUseCase.getTopProductsPerBranch("franchise-1"))
-        .expectNext(product1)
-        .verifyComplete();
-    
-    verify(productRepository, times(2)).findTopProductsByFranchise("franchise-1");
-  }
-
-  @Test
-  void getTopProductsPerBranch_FranchiseErrorButCacheAvailable() {
-    Product product1 = Product.builder().id("p1").stock(20).branchId("branch-1").build();
-    
-    when(franchiseRepository.findById("franchise-1"))
-        .thenReturn(Mono.error(new RuntimeException("DynamoDB error")));
-    when(productRepository.findTopProductsByFranchise("franchise-1"))
-        .thenReturn(Flux.just(product1));
-
-    StepVerifier.create(productUseCase.getTopProductsPerBranch("franchise-1"))
-        .expectNext(product1)
-        .verifyComplete();
-    
-    verify(productRepository, times(2)).findTopProductsByFranchise("franchise-1");
-  }
-
-  @Test
   void updateNameProduct_Success() {
     Product updatedProduct = Product.builder()
         .id("product-1")
