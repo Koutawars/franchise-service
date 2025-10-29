@@ -1,0 +1,545 @@
+{
+	"info": {
+		"_postman_id": "251d349b-5c4e-4e4d-a7e6-f47af2964cdb",
+		"name": "franchise-service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "19247850"
+	},
+	"item": [
+		{
+			"name": "Create franchise",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract 'id' from JSON response and save to environment var 'franchiseId'",
+							"// Works for 200 responses; handles missing id gracefully.",
+							"",
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.expect(pm.response.code).to.eql(200);",
+							"});",
+							"",
+							"let json;",
+							"try {",
+							"    json = pm.response.json();",
+							"} catch (e) {",
+							"    json = null;",
+							"}",
+							"",
+							"pm.test(\"Extract and store franchiseId when available\", function () {",
+							"    // Proceed only if status 200 and body is JSON",
+							"    if (pm.response.code === 200 && json) {",
+							"        // Support either top-level id or nested in data.id",
+							"        const id = (json && (json.id || (json.data && json.data.id))) || null;",
+							"",
+							"        if (id) {",
+							"            pm.environment.set('franchiseId', String(id));",
+							"            pm.expect(pm.environment.get('franchiseId')).to.exist;",
+							"        } else {",
+							"            // Ensure we don't keep a stale value",
+							"            pm.environment.unset('franchiseId');",
+							"            pm.expect(true, \"Response JSON has no id to store\").to.be.true;",
+							"        }",
+							"    } else {",
+							"        // Non-200 or non-JSON: do not fail the run; just skip storing",
+							"        pm.expect(true, \"Skipping id storage due to non-200 or non-JSON response\").to.be.true;",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"MC Donalds\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Create branch",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract branchId from response when status 200 and save to environment",
+							"pm.test(\"Status code is 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"});",
+							"",
+							"(function handleBranchIdExtraction() {",
+							"  if (pm.response.code !== 200) {",
+							"    console.log(\"Create branch: Skipping branchId save because status is\", pm.response.code);",
+							"    return;",
+							"  }",
+							"  let body;",
+							"  try {",
+							"    body = pm.response.json();",
+							"  } catch (e) {",
+							"    console.log(\"Create branch: Response is not valid JSON, cannot extract id\");",
+							"    return;",
+							"  }",
+							"",
+							"  const branchId = body && body.data && body.data.id ? String(body.data.id) : null;",
+							"",
+							"  if (branchId) {",
+							"    pm.environment.set(\"branchId\", branchId);",
+							"    console.log(\"Create branch: Saved branchId to environment:\", branchId);",
+							"  } else {",
+							"    console.log(\"Create branch: 'data.id' not found in the response. Nothing saved.\");",
+							"    // If you want the run to fail when id is missing, uncomment the test below",
+							"    // pm.test(\"Response contains data.id\", function () { pm.expect(branchId, \"data.id should be present\").to.be.ok; });",
+							"  }",
+							"})();"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Branch Santa Marta Maria Eugenia\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"branches"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Create product",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Extract branchId from response when status 200 and save to environment\r",
+							"pm.test(\"Status code is 200\", function () {\r",
+							"  pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"(function handleProductIdExtraction() {\r",
+							"  if (pm.response.code !== 200) {\r",
+							"    console.log(\"Create product: Skipping branchId save because status is\", pm.response.code);\r",
+							"    return;\r",
+							"  }\r",
+							"  let body;\r",
+							"  try {\r",
+							"    body = pm.response.json();\r",
+							"  } catch (e) {\r",
+							"    console.log(\"Create product: Response is not valid JSON, cannot extract id\");\r",
+							"    return;\r",
+							"  }\r",
+							"\r",
+							"  const branchId = body && body.data && body.data.id ? String(body.data.id) : null;\r",
+							"\r",
+							"  if (branchId) {\r",
+							"    pm.environment.set(\"productId\", branchId);\r",
+							"    console.log(\"Create product: Saved branchId to environment:\", branchId);\r",
+							"  } else {\r",
+							"    console.log(\"Create product: 'data.id' not found in the response. Nothing saved.\");\r",
+							"    // If you want the run to fail when id is missing, uncomment the test below\r",
+							"    // pm.test(\"Response contains data.id\", function () { pm.expect(branchId, \"data.id should be present\").to.be.ok; });\r",
+							"  }\r",
+							"})();"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Macburguer\",\n  \"stock\": 1000\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"branches",
+						"{{branchId}}",
+						"products"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Delete product",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"branches",
+						"{{branchId}}",
+						"products",
+						"{{productId}}"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Change name in product",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"stock\": 100\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/stock",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"branches",
+						"{{branchId}}",
+						"products",
+						"{{productId}}",
+						"stock"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Top products in stock by franchise",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/top-products",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"top-products"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Update franchise name",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"MC Donalds MCA\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/name",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"name"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Update branch name",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Branch Santa Marta Maria Eugenia A\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/name",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"branches",
+						"{{branchId}}",
+						"name"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		},
+		{
+			"name": "Update product name",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const branchId = bru.getEnvVar(\"branchId\");",
+							"bru.setVar(\"branchId\", branchId);",
+							"const franchiseId = bru.getEnvVar(\"franchiseId\");",
+							"bru.setVar(\"franchiseId\", franchiseId);",
+							"const productId = bru.getEnvVar(\"productId\");",
+							"bru.setVar(\"productId\", productId);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Macburgueron\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{franchise_service}}/franchises/{{franchiseId}}/branches/{{branchId}}/products/{{productId}}/name",
+					"host": [
+						"{{franchise_service}}"
+					],
+					"path": [
+						"franchises",
+						"{{franchiseId}}",
+						"branches",
+						"{{branchId}}",
+						"products",
+						"{{productId}}",
+						"name"
+					]
+				},
+				"description": "This request retrieves a list of users from the JSONPlaceholder API."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "franchise_service",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "franchiseId",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "branchId",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "productId",
+			"value": "",
+			"type": "default"
+		}
+	]
+}
